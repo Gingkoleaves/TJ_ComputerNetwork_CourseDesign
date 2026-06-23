@@ -1,0 +1,1121 @@
+% 同济大学 计算机网络课程设计 实验报告
+% 题目二：中小企业网络规划与设计 (V2)
+% 基于 Cisco Packet Tracer Hub-and-Spoke 架构
+
+\documentclass[12pt,a4paper]{ctexart}
+
+% ============ 页面设置 ============
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.8cm, right=2.8cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% ============ 修复 fancyhdr 警告 ============
+\setlength{\headheight}{14.5pt}
+
+% ============ 代码块样式 ============
+\definecolor{codebg}{rgb}{0.95,0.95,0.95}
+\definecolor{codefg}{rgb}{0.1,0.1,0.3}
+\definecolor{commentcolor}{rgb}{0.2,0.5,0.2}
+\lstset{
+    basicstyle=\small\ttfamily,
+    backgroundcolor=\color{codebg},
+    frame=single,
+    rulecolor=\color{black!30},
+    breaklines=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    commentstyle=\color{commentcolor},
+    keywordstyle=\color{blue},
+    stringstyle=\color{orange},
+    showstringspaces=false,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{gray},
+    tabsize=2
+}
+
+% ============ 超链接设置 ============
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+    citecolor=green
+}
+
+% ============ 页眉页脚 ============
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{计算机网络课程设计}
+\fancyhead[R]{题目二：中小企业网络规划与设计}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ============ 标题格式 ============
+\titleformat{\section}{\Large\bfseries}{}{0em}{}[]
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}[]
+\titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{}[]
+
+% ============ 图片路径 ============
+\graphicspath{{Assets/v2/}}
+
+\begin{document}
+
+% ==================== 封面 ====================
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+    \vspace*{1cm}
+
+    {\Huge\textbf{同济大学}}\\[0.2cm]
+    {\Huge\textbf{计算机科学与技术系}}\\[1.2cm]
+
+    {\LARGE\textbf{计算机网络课程设计}}\\[0.3cm]
+    {\LARGE\textbf{实验报告}}\\[1.2cm]
+
+    \includegraphics[width=0.4\textwidth]{../../Tongji.png}\\[1.2cm]
+
+    \begin{large}
+    \begin{tabular}{rl}
+        \textbf{学\qquad 号：} & 2350998、2350988、2353598 \\[0.2cm]
+        \textbf{姓\qquad 名：} & 庄子硕、何东峻、张云夏 \\[0.2cm]
+        \textbf{专\qquad 业：} & 计算机科学与技术 \\[0.2cm]
+        \textbf{授课老师：} & 田春岐 \\[0.2cm]
+        \textbf{日\qquad 期：} & \today \\
+    \end{tabular}
+    \end{large}
+
+    \vfill
+\end{center}
+\end{titlepage}
+
+% ==================== 目录 ====================
+\tableofcontents
+\newpage
+
+% ==================== 一、项目概述 ====================
+\section{项目概述}
+
+\subsection{项目背景}
+
+随着企业信息化建设不断深入，中小企业对网络系统的依赖程度日益提高。企业内部办公自动化（OA）、邮件通信、文件共享、远程办公以及互联网访问等业务均需要稳定、安全、高效的网络环境作为支撑。
+
+本项目针对某中小企业进行网络规划与设计。企业总部拥有约 1000 台 PC，并设有市场部、财务部、人事部、研发部、行政部、运营部、客服部共 7 个部门，同时在外省设有 3 个分公司。企业要求实现总部与分公司的互联互通，并能够安全地对外提供 WEB、邮件以及匿名 FTP 服务，同时保障内部 OA 系统的正常运行。
+
+本方案基于 Cisco Packet Tracer 平台，采用\textbf{Hub-and-Spoke（中心辐射型）}网络拓扑架构，以中心路由器为核心，通过高速串行链路连接 ISP、分公司及总部网络。网络采用 \textbf{RIPv2 动态路由协议}实现路由自动学习，结合 \textbf{VLAN、ACL、VPN（IPSec）、NAT、DHCP} 等关键网络技术，构建安全、可靠、可扩展的企业网络环境。
+
+\subsection{项目需求}
+
+根据题目要求，网络系统需满足以下需求：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item 公司总部拥有约 1000 台 PC；
+    \item 企业共有 7 个部门，不同部门之间访问权限受限；
+    \item 企业拥有 3 个跨省分公司；
+    \item 企业内部部署 OA 系统；
+    \item 企业可对外提供 WWW、匿名 FTP、邮件服务；
+    \item FTP 服务仅允许内部员工访问；
+    \item 所有终端均可访问互联网；
+    \item 每个部门独立划分 VLAN；
+    \item 总部与分公司之间通过 VPN 技术实现安全互联；
+    \item 支持远程办公人员通过 VPN 接入企业内网；
+    \item 网络需具备较高安全性、可靠性与扩展能力。
+\end{enumerate}
+
+% ==================== 二、可行性分析报告 ====================
+\section{可行性分析报告}
+
+\subsection{社会可行性分析}
+
+企业信息化网络建设能够显著提升企业办公效率，促进企业内部信息共享与资源协同。通过构建统一的企业网络平台，可以实现跨部门协作、远程办公、数据共享以及业务系统集中管理。
+
+VPN 技术能够有效保障总部与分公司之间的数据传输安全，提高企业跨区域协同办公能力。同时，通过建设 OA 系统与内部服务器平台，企业能够进一步提升管理效率，降低运营成本。
+
+本方案新增了对\textbf{远程办公人员 VPN 接入}的支持，使外部员工能够通过加密隧道安全访问企业 OA 系统和内部资源，符合后疫情时代混合办公模式的社会需求。
+
+因此，本项目具有较高的社会应用价值和现实意义。
+
+\subsection{技术可行性分析}
+
+本系统主要采用 \textbf{VLAN、VPN（IPSec）、ACL、RIPv2、NAT、DHCP、STP} 等成熟网络技术，具备较高的技术可行性。
+
+\subsubsection{VLAN（虚拟局域网）}
+
+VLAN 技术能够将不同部门划分为独立广播域，实现逻辑隔离，减少广播风暴，提高网络安全性与管理效率。本方案中，总部通过核心交换机 2560-24PS 划分 VLAN，各分公司通过路由器子接口实现 VLAN 隔离。
+
+\subsubsection{VPN（虚拟专用网络）}
+
+VPN 技术用于实现总部与外省分公司之间的安全通信，以及远程办公人员的安全接入。
+
+本方案采用 \textbf{IPSec VPN} 技术，包括：
+\begin{itemize}
+    \item \textbf{站点到站点 VPN（Site-to-Site VPN）}：总部与三个分公司之间建立 IPSec 隧道，保证跨公网的数据加密传输；
+    \item \textbf{远程访问 VPN（Remote Access VPN）}：外部办公 PC 通过 VPN 服务器接入企业内网，安全访问 OA 系统和内部资源。
+\end{itemize}
+
+\subsubsection{RIPv2（路由信息协议第二版）}
+
+RIPv2 是一种经典的距离矢量路由协议，支持 VLSM 和 CIDR，适用于中小型网络的动态路由学习。本方案在总部、分公司和 ISP 之间的路由器上部署 RIPv2，实现全网路由自动学习与通告，保证内网可达性。
+
+\subsubsection{ACL（访问控制列表）}
+
+ACL 用于实现精细化的访问控制策略：
+\begin{itemize}
+    \item 禁止普通部门（如市场部）访问财务部 VLAN；
+    \item 仅允许内部员工通过 FTP 协议访问 FTP 服务器；
+    \item 限制外部网络对内部 OA 系统的直接访问；
+    \item 控制 VPN 流量的加密范围。
+\end{itemize}
+
+\subsubsection{NAT（网络地址转换）}
+
+NAT 技术实现内部私有 IP 地址到公网 IP 地址的转换。本方案在 ISP 边界路由器上配置 PAT（端口地址转换），使所有内部终端共享一个公网 IP 地址访问互联网，同时隐藏内部网络拓扑，提高安全性。
+
+\subsubsection{DHCP（动态主机配置协议）}
+
+DHCP 服务器自动为各 VLAN 的终端分配 IP 地址、默认网关和 DNS 服务器地址。本方案将 DHCP 服务与 DNS 服务部署在同一台服务器上（IP: 192.168.80.50），减少人工配置工作量，降低 IP 地址冲突风险。
+
+\subsubsection{STP（生成树协议）}
+
+STP 用于防止交换网络中的环路问题。在总部核心交换机与部门接入交换机之间运行 STP，避免二层环路导致的广播风暴，提高网络稳定性。
+
+\subsection{经济可行性分析}
+
+本项目主要成本包括：
+
+\begin{table}[H]
+\centering
+\caption{项目预算明细}
+\begin{tabular}{|l|r|}
+\hline
+\textbf{项目}          & \textbf{预算（万元）} \\ \hline
+核心路由器（2811）      & 12                   \\ \hline
+核心交换机（2560-24PS） & 8                    \\ \hline
+接入交换机（2960）      & 18                   \\ \hline
+分公司路由器（2811）    & 15                   \\ \hline
+分公司交换机（1960-24TT）& 6                    \\ \hline
+防火墙设备              & 15                   \\ \hline
+服务器设备              & 20                   \\ \hline
+VPN 设备与许可          & 10                   \\ \hline
+综合布线                & 10                   \\ \hline
+施工与维护              & 8                    \\ \hline
+\textbf{合计}          & \textbf{约 122}      \\ \hline
+\end{tabular}
+\end{table}
+
+项目整体预算适中（约 122 万元），符合中小企业信息化建设要求。采用 Packet Tracer 平台进行模拟验证，可在实际采购前充分验证网络设计的合理性与正确性，降低实施风险。
+
+% ==================== 三、需求分析 ====================
+\section{需求分析}
+
+\subsection{网络需求}
+
+企业网络需满足以下核心需求：
+
+\begin{itemize}
+    \item 支持约 1000 台终端接入，覆盖 7 个部门及 3 个分公司；
+    \item 部门之间实现逻辑隔离，财务部等高安全部门禁止普通部门访问；
+    \item 所有终端均可通过 NAT 访问互联网；
+    \item 总部与三个分公司之间通过 IPSec VPN 实现安全加密互联；
+    \item 远程办公人员可通过 VPN 拨入企业内网；
+    \item 内部部署 OA 办公系统、邮件系统、WWW 服务和 FTP 服务；
+    \item 外部用户可访问企业门户网站和邮件服务；
+    \item FTP 服务仅限内部员工使用；
+    \item 自动 IP 地址分配（DHCP）；
+    \item 网络需具备环路防护（STP）和高扩展性。
+\end{itemize}
+
+\subsection{VLAN 规划}
+
+根据企业组织架构和业务需求，将网络划分为 8 个 VLAN，如表 \ref{tab:vlan} 所示。
+
+\begin{table}[H]
+\centering
+\caption{VLAN 规划表}
+\label{tab:vlan}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{VLAN ID} & \textbf{部门名称} & \textbf{网段}           & \textbf{默认网关}   \\ \hline
+VLAN 10          & 市场部 (MARKET)   & 192.168.10.0/24         & 192.168.10.1        \\ \hline
+VLAN 20          & 财务部 (FINANCE)  & 192.168.20.0/24         & 192.168.20.1        \\ \hline
+VLAN 30          & 人事部 (HR)       & 192.168.30.0/24         & 192.168.30.1        \\ \hline
+VLAN 40          & 研发部 (DEV)      & 192.168.40.0/24         & 192.168.40.1        \\ \hline
+VLAN 50          & 行政部 (ADMIN)    & 192.168.50.0/24         & 192.168.50.1        \\ \hline
+VLAN 60          & 运营部 (OPERATION)& 192.168.60.0/24         & 192.168.60.1        \\ \hline
+VLAN 70          & 客服部 (SERVICE)  & 192.168.70.0/24         & 192.168.70.1        \\ \hline
+VLAN 80          & 服务器区 (SERVER) & 192.168.80.0/24         & 192.168.80.1        \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{服务器规划}
+
+总部服务器区（VLAN 80）部署三台核心服务器，分别承担 Web 服务、DNS/DHCP 服务以及 FTP/Email 服务，如表 \ref{tab:server} 所示。
+
+\begin{table}[H]
+\centering
+\caption{服务器规划表}
+\label{tab:server}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{服务器名称} & \textbf{IP 地址}      & \textbf{功能说明}                  \\ \hline
+Web Server          & 192.168.80.10         & 企业门户网站（HTTP）               \\ \hline
+DNS \& DHCP Server  & 192.168.80.50         & DNS 域名解析 \& DHCP 动态地址分配   \\ \hline
+FTP \& Email Server & 192.168.80.20/30      & FTP 文件服务 \& Email 邮件服务      \\ \hline
+\end{tabular}
+\end{table}
+
+\textbf{设计说明：} 相比于每个服务独立部署一台服务器，本方案将功能相近的服务整合，减少服务器数量，降低硬件和维护成本，同时满足中小企业的实际需求。
+
+\subsection{IP 地址规划}
+
+\begin{table}[H]
+\centering
+\caption{全局 IP 地址规划}
+\label{tab:ip}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{网络区域}        & \textbf{网段}              & \textbf{子网掩码}       & \textbf{说明}          \\ \hline
+总部 VLAN 10--70         & 192.168.10.0/24 -- 70.0/24& 255.255.255.0           & 7 个部门子网           \\ \hline
+总部服务器区 (VLAN 80)   & 192.168.80.0/24           & 255.255.255.0           & 服务器集群             \\ \hline
+总部与核心路由器互联     & 10.0.0.0/30               & 255.255.255.252         & 点对点链路             \\ \hline
+核心路由器与 ISP 互联    & 202.100.1.0/30            & 255.255.255.252         & 公网接口               \\ \hline
+分公司 1 内部网段        & 172.16.1.0/24             & 255.255.255.0           & Branch 1               \\ \hline
+分公司 2 内部网段        & 172.16.2.0/24             & 255.255.255.0           & Branch 2               \\ \hline
+分公司 3 内部网段        & 172.16.3.0/24             & 255.255.255.0           & Branch 3               \\ \hline
+分公司与核心路由器互联   & 1.1.1.0/30 等             & 255.255.255.252         & 串行点对点链路         \\ \hline
+VPN 客户端地址池         & 172.16.100.0/24           & 255.255.255.0           & 远程 VPN 接入          \\ \hline
+\end{tabular}
+\end{table}
+
+% ==================== 四、网络结构设计 ====================
+\section{网络结构设计}
+
+\subsection{网络拓扑结构}
+
+本方案采用 \textbf{Hub-and-Spoke（中心辐射型）}网络拓扑架构，以总部核心路由器（Core-Router，Cisco 2811）为整个网络的枢纽中心。拓扑结构分为以下层次：
+
+\subsubsection{第一层：ISP 互联层}
+
+ISP 采用 Cisco 2811 路由器，通过串行链路连接核心路由器。ISP 路由器同时连接外部 Web 服务器（模拟互联网服务）和外部测试 PC，用于验证外网访问功能。
+
+\subsubsection{第二层：核心路由层}
+
+核心路由器（Cisco 2811）是整个网络的交通枢纽，负责：
+\begin{itemize}
+    \item 向上通过串行链路连接 ISP，实现互联网接入；
+    \item 向下连接总部顶级路由器（HQ-Router，Cisco 2811）；
+    \item 通过三条串行链路分别连接三个分公司路由器，实现分支机构互联；
+    \item 运行 RIPv2 动态路由协议，维护全网路由表。
+\end{itemize}
+
+\subsubsection{第三层：总部分发层}
+
+总部网络采用两级结构：
+\begin{itemize}
+    \item \textbf{总部顶级路由器（HQ-Router，Cisco 2811）}：作为总部网络的网关，向上连接核心路由器，向下连接总部核心交换机。
+    \item \textbf{总部核心交换机（HQ-Core-SW，Cisco 2560-24PS）}：作为总部网络的核心交换节点，通过 Trunk 链路连接各部门接入交换机和服务器区交换机，支持 VLAN 间路由。
+\end{itemize}
+
+\subsubsection{第四层：接入层}
+
+\begin{itemize}
+    \item \textbf{部门接入交换机（3 台 Cisco 2960）}：分别连接各部门 PC，承载 VLAN 10--70 的用户流量；
+    \item \textbf{服务器接入交换机（1 台 Cisco 2960）}：连接服务器区三台服务器（VLAN 80）；
+    \item \textbf{分公司交换机（3 台 Cisco 1960-24TT）}：各分公司内部的二层交换设备，连接分公司终端。
+\end{itemize}
+
+\subsubsection{第五层：分支机构}
+
+每个分公司采用\textbf{二级路由结构}：
+\begin{itemize}
+    \item \textbf{分公司路由器（Cisco 2811）}：通过串行链路与总部核心路由器互联，运行 RIPv2，支持 IPSec VPN 隧道，通过子接口实现 VLAN 划分；
+    \item \textbf{分公司交换机（Cisco 1960-24TT）}：连接分公司内部 PC 和终端设备。
+\end{itemize}
+
+\subsubsection{拓扑结构图}
+
+整体网络拓扑结构如图 \ref{fig:total-topo} 所示：
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{total_topo.png}
+\caption{全局网络拓扑图（Cisco Packet Tracer V2）}
+\label{fig:total-topo}
+\end{figure}
+
+\subsection{VPN 结构设计}
+
+本方案采用双重 VPN 架构，满足不同场景的安全接入需求：
+
+\subsubsection{站点到站点 IPSec VPN}
+
+总部核心路由器与三个分公司路由器之间建立 IPSec VPN 隧道，实现以下功能：
+\begin{itemize}
+    \item 分公司终端可以安全访问总部的 OA 系统、文件服务器和内部资源；
+    \item 所有跨公网传输的数据经过 AES 加密和 SHA 完整性校验；
+    \item 使用预共享密钥（Pre-Shared Key）进行身份认证。
+\end{itemize}
+
+VPN 对等体关系如下：
+
+\begin{center}
+\begin{tabular}{c}
+Branch1-Router $\longleftrightarrow$ Core-Router (IPSec Tunnel) \\
+Branch2-Router $\longleftrightarrow$ Core-Router (IPSec Tunnel) \\
+Branch3-Router $\longleftrightarrow$ Core-Router (IPSec Tunnel) \\
+\end{tabular}
+\end{center}
+
+\subsubsection{远程访问 VPN}
+
+ISP 侧的外部 PC 通过 VPN 客户端软件，经过公网连接到 VPN 服务器（ISP 路由器上配置），建立加密隧道后安全访问企业内部资源（如 OA 系统）。这是典型的\textbf{Remote Access VPN} 场景，满足远程办公需求。
+
+
+\subsection{安全设计}
+
+网络安全是本次设计的核心关注点。本方案采用多层次、纵深防御的安全体系：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{VLAN 逻辑隔离}：将不同部门划分到不同的广播域，实现二层隔离，防止部门间的非授权二层访问；
+    \item \textbf{ACL 访问控制}：
+        \begin{itemize}
+            \item 在核心交换机上配置扩展 ACL，禁止普通部门（如市场部、客服部）访问财务部 VLAN 20；
+            \item 在服务器区入口配置 ACL，仅允许内部 IP 地址段（192.168.0.0/16）访问 FTP 服务；
+            \item 限制外部网络对 OA 系统（TCP 8080）的直接访问，仅允许 VPN 隧道流量通过。
+        \end{itemize}
+    \item \textbf{NAT 地址转换}：在 ISP 边界路由器上配置 PAT，隐藏内部网络结构，仅暴露一个公网 IP；
+    \item \textbf{IPSec VPN 加密}：所有跨公网的站点间和远程接入流量均经过 IPSec 加密，防止数据窃听和篡改；
+    \item \textbf{STP 环路防护}：在总部二层交换网络中启用生成树协议，防止广播风暴和 MAC 地址表震荡；
+    \item \textbf{路由安全}：RIPv2 支持 MD5 认证（可在后续升级中启用），防止路由欺骗。
+\end{enumerate}
+
+% ==================== 五、系统配置与实施 ====================
+\section{系统配置与实施}
+
+本章详细介绍各网络设备的关键配置命令。所有配置均基于 Cisco IOS 命令行，并在 Cisco Packet Tracer 平台上完成验证。
+
+\subsection{核心路由器配置（Core-Router）}
+
+设备型号：\textbf{Cisco 2811}，作为全网路由枢纽。
+
+\begin{lstlisting}[caption={核心路由器基础配置}, label={lst:core-router}]
+enable
+configure terminal
+
+hostname Core-Router
+
+! ---- 连接 ISP 的串行接口 ----
+interface Serial0/0/0
+ ip address 202.100.1.2 255.255.255.252
+ no shutdown
+
+! ---- 连接总部顶级路由器的接口 ----
+interface GigabitEthernet0/0
+ ip address 10.0.0.1 255.255.255.252
+ no shutdown
+
+! ---- 连接分公司 1 的串行接口 ----
+interface Serial0/1/0
+ ip address 1.1.1.1 255.255.255.252
+ no shutdown
+
+! ---- 连接分公司 2 的串行接口 ----
+interface Serial0/1/1
+ ip address 1.1.2.1 255.255.255.252
+ no shutdown
+
+! ---- 连接分公司 3 的串行接口 ----
+interface Serial0/2/0
+ ip address 1.1.3.1 255.255.255.252
+ no shutdown
+\end{lstlisting}
+
+\subsection{RIPv2 动态路由配置}
+
+全网采用 \textbf{RIPv2} 动态路由协议，替代旧版方案中的 OSPF。RIPv2 支持 VLSM 和 CIDR，配置更简洁，适合中小型网络。
+
+\begin{lstlisting}[caption={Core-Router RIPv2 路由配置}, label={lst:rip-core}]
+router rip
+ version 2
+ network 202.100.1.0
+ network 10.0.0.0
+ network 1.1.1.0
+ network 1.1.2.0
+ network 1.1.3.0
+ network 192.168.10.0
+ network 192.168.20.0
+ network 192.168.30.0
+ network 192.168.40.0
+ network 192.168.50.0
+ network 192.168.60.0
+ network 192.168.70.0
+ network 192.168.80.0
+ no auto-summary
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Branch-Router RIPv2 配置（以分公司1为例）}, label={lst:rip-branch}]
+! ---- 分公司 1 路由器 (Branch1-Router, 2811) ----
+router rip
+ version 2
+ network 1.1.1.0
+ network 172.16.1.0
+ no auto-summary
+\end{lstlisting}
+
+\begin{lstlisting}[caption={总部顶级路由器 RIPv2 配置}, label={lst:rip-hq}]
+! ---- 总部顶级路由器 (HQ-Router, 2811) ----
+router rip
+ version 2
+ network 10.0.0.0
+ network 192.168.10.0
+ network 192.168.20.0
+ network 192.168.30.0
+ network 192.168.40.0
+ network 192.168.50.0
+ network 192.168.60.0
+ network 192.168.70.0
+ network 192.168.80.0
+ no auto-summary
+\end{lstlisting}
+
+\subsection{总部核心交换机配置（HQ-Core-SW）}
+
+设备型号：\textbf{Cisco 2560-24PS}。
+
+\begin{lstlisting}[caption={总部核心交换机 VLAN 创建}, label={lst:core-sw-vlan}]
+enable
+configure terminal
+
+hostname HQ-Core-SW
+
+! ---- 创建 VLAN ----
+vlan 10
+ name MARKET
+vlan 20
+ name FINANCE
+vlan 30
+ name HR
+vlan 40
+ name DEV
+vlan 50
+ name ADMIN
+vlan 60
+ name OPERATION
+vlan 70
+ name SERVICE
+vlan 80
+ name SERVER
+\end{lstlisting}
+
+\begin{lstlisting}[caption={总部核心交换机 SVI 接口配置}, label={lst:core-sw-svi}]
+! ---- 配置各 VLAN 的三层 SVI 接口（VLAN 间路由） ----
+interface vlan 10
+ ip address 192.168.10.1 255.255.255.0
+ no shutdown
+!
+interface vlan 20
+ ip address 192.168.20.1 255.255.255.0
+ no shutdown
+!
+interface vlan 30
+ ip address 192.168.30.1 255.255.255.0
+ no shutdown
+!
+interface vlan 40
+ ip address 192.168.40.1 255.255.255.0
+ no shutdown
+!
+interface vlan 50
+ ip address 192.168.50.1 255.255.255.0
+ no shutdown
+!
+interface vlan 60
+ ip address 192.168.60.1 255.255.255.0
+ no shutdown
+!
+interface vlan 70
+ ip address 192.168.70.1 255.255.255.0
+ no shutdown
+!
+interface vlan 80
+ ip address 192.168.80.1 255.255.255.0
+ no shutdown
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Trunk 端口配置}, label={lst:core-sw-trunk}]
+! ---- 配置与部门接入交换机和服务器交换机之间的 Trunk 链路 ----
+interface range FastEthernet0/1-4
+ switchport mode trunk
+
+! ---- 配置与顶级路由器连接的上行端口 ----
+interface GigabitEthernet0/1
+ no switchport
+ ip address 10.0.0.2 255.255.255.252
+ no shutdown
+\end{lstlisting}
+
+\subsection{DHCP 配置}
+
+DHCP 服务由服务器区的 DNS/DHCP 服务器（192.168.80.50）提供，同时在核心交换机上配置 DHCP 中继（如需）。以下为服务器端 DHCP 配置示意和各 VLAN 地址池配置：
+
+\begin{lstlisting}[caption={核心交换机 DHCP 配置}, label={lst:dhcp}]
+! ---- 排除静态 IP 地址范围 ----
+ip dhcp excluded-address 192.168.10.1 192.168.10.20
+ip dhcp excluded-address 192.168.20.1 192.168.20.20
+ip dhcp excluded-address 192.168.30.1 192.168.30.20
+
+! ---- 各 VLAN DHCP 地址池 ----
+ip dhcp pool MARKET
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 192.168.80.50
+
+ip dhcp pool FINANCE
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 192.168.80.50
+
+ip dhcp pool HR
+ network 192.168.30.0 255.255.255.0
+ default-router 192.168.30.1
+ dns-server 192.168.80.50
+
+! ---- 其余 VLAN 地址池配置同理 ----
+\end{lstlisting}
+
+\subsection{边界路由器与 NAT 配置}
+
+设备型号：\textbf{Cisco 2811（ISP-Router 和 Core-Router）}。
+
+\begin{lstlisting}[caption={NAT 配置（Core-Router）}, label={lst:nat}]
+! ---- 定义内外网接口 ----
+interface Serial0/0/0
+ ip nat outside
+
+interface GigabitEthernet0/0
+ ip nat inside
+
+! ---- 定义 NAT 转换 ACL ----
+access-list 1 permit 192.168.0.0 0.0.255.255
+access-list 1 permit 172.16.0.0 0.0.255.255
+
+! ---- PAT 转换（端口地址转换） ----
+ip nat inside source list 1 interface Serial0/0/0 overload
+
+! ---- 默认路由指向 ISP ----
+ip route 0.0.0.0 0.0.0.0 202.100.1.1
+\end{lstlisting}
+
+\subsection{ACL 访问控制配置}
+
+\begin{lstlisting}[caption={ACL 配置 — 部门间访问控制}, label={lst:acl-dept}]
+! ---- 禁止市场部（VLAN 10）访问财务部（VLAN 20） ----
+access-list 100 deny ip 192.168.10.0 0.0.0.255 192.168.20.0 0.0.0.255
+access-list 100 deny ip 192.168.70.0 0.0.0.255 192.168.20.0 0.0.0.255
+access-list 100 permit ip any any
+!
+interface vlan 10
+ ip access-group 100 in
+interface vlan 70
+ ip access-group 100 in
+\end{lstlisting}
+
+\begin{lstlisting}[caption={ACL 配置 — FTP 访问控制}, label={lst:acl-ftp}]
+! ---- 仅允许内部 IP 访问 FTP 服务器（192.168.80.20） ----
+access-list 110 permit tcp 192.168.0.0 0.0.255.255 host 192.168.80.20 eq 21
+access-list 110 permit tcp 172.16.0.0 0.0.255.255 host 192.168.80.20 eq 21
+access-list 110 deny tcp any host 192.168.80.20 eq 21
+access-list 110 permit ip any any
+!
+interface vlan 80
+ ip access-group 110 out
+\end{lstlisting}
+
+\subsection{IPSec VPN 配置}
+
+\subsubsection{站点到站点 VPN 配置（Core-Router 侧）}
+
+\begin{lstlisting}[caption={IPSec VPN Phase 1 — IKE/ISAKMP 策略}, label={lst:vpn-ike}]
+! ---- IKE Phase 1 策略 ----
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha
+ authentication pre-share
+ group 2
+ lifetime 86400
+
+! ---- 预共享密钥（分别对应三个分公司） ----
+crypto isakmp key Branch1Key address 1.1.1.2
+crypto isakmp key Branch2Key address 1.1.2.2
+crypto isakmp key Branch3Key address 1.1.3.2
+\end{lstlisting}
+
+\begin{lstlisting}[caption={IPSec VPN Phase 2 — 转换集与加密映射}, label={lst:vpn-ipsec}]
+! ---- IPSec 转换集 ----
+crypto ipsec transform-set VPN-SET esp-aes 256 esp-sha-hmac
+
+! ---- 定义 VPN 加密流量 ----
+access-list 120 permit ip 192.168.0.0 0.0.255.255 172.16.1.0 0.0.0.255
+access-list 121 permit ip 192.168.0.0 0.0.255.255 172.16.2.0 0.0.0.255
+access-list 122 permit ip 192.168.0.0 0.0.255.255 172.16.3.0 0.0.0.255
+
+! ---- 加密映射（分别对应三个分公司） ----
+crypto map VPN-MAP 10 ipsec-isakmp
+ set peer 1.1.1.2
+ set transform-set VPN-SET
+ match address 120
+
+crypto map VPN-MAP 20 ipsec-isakmp
+ set peer 1.1.2.2
+ set transform-set VPN-SET
+ match address 121
+
+crypto map VPN-MAP 30 ipsec-isakmp
+ set peer 1.1.3.2
+ set transform-set VPN-SET
+ match address 122
+
+! ---- 将加密映射应用到接口 ----
+interface Serial0/1/0
+ crypto map VPN-MAP
+interface Serial0/1/1
+ crypto map VPN-MAP
+interface Serial0/2/0
+ crypto map VPN-MAP
+\end{lstlisting}
+
+\subsubsection{远程访问 VPN 配置（ISP-Router/VPN-Server）}
+
+\begin{lstlisting}[caption={远程访问 VPN 配置}, label={lst:vpn-remote}]
+! ---- VPN 服务器（ISP-Router）上的远程接入配置 ----
+username remote_user password 0 SecurePass123
+
+! ---- 为远程 VPN 客户端分配地址池 ----
+ip local pool VPN-POOL 172.16.100.10 172.16.100.50
+
+! ---- 远程接入 VPN 策略 ----
+crypto isakmp client configuration group VPN-GROUP
+ key RemoteVPNKey
+ pool VPN-POOL
+ acl 130
+
+access-list 130 permit ip 192.168.0.0 0.0.255.255 any
+\end{lstlisting}
+
+\subsection{服务器配置}
+
+\subsubsection{WEB 服务器（192.168.80.10）}
+
+\begin{itemize}
+    \item \textbf{HTTP 服务}：开启，端口 80
+    \item \textbf{首页内容}：企业门户网站欢迎页
+\begin{lstlisting}[language=HTML]
+<html>
+<head><title>企业门户网站</title></head>
+<body>
+  <h1>欢迎访问企业官方网站</h1>
+  <p>提供产品展示、企业动态、在线客服等服务</p>
+</body>
+</html>
+\end{lstlisting}
+\end{itemize}
+
+\subsubsection{FTP \& Email 服务器（192.168.80.20/30）}
+
+\begin{itemize}
+    \item \textbf{FTP 服务}：开启，端口 21，支持匿名登录（Anonymous Login: Enable），通过 ACL 限制仅内部员工访问
+    \item \textbf{Email 服务}：开启，支持 SMTP（端口 25）和 POP3（端口 110），用于企业内部和外部邮件通信
+\end{itemize}
+
+\subsubsection{DNS \& DHCP 服务器（192.168.80.50）}
+
+\begin{itemize}
+    \item \textbf{DNS 服务}：提供域名解析，将 \texttt{www.company.com} 解析到 192.168.80.10，\texttt{mail.company.com} 解析到 192.168.80.30
+    \item \textbf{DHCP 服务}：为各 VLAN 终端自动分配 IP、网关、DNS
+\end{itemize}
+
+\subsection{分公司路由器配置（Branch-Router）}
+
+设备型号：\textbf{Cisco 2811}（每个分公司各一台）。
+
+\begin{lstlisting}[caption={分公司路由器配置（以Branch1为例）}, label={lst:branch}]
+enable
+configure terminal
+
+hostname Branch1-Router
+
+! ---- 连接核心路由器的串行接口 ----
+interface Serial0/0/0
+ ip address 1.1.1.2 255.255.255.252
+ no shutdown
+
+! ---- 连接分公司交换机的接口 ----
+interface GigabitEthernet0/0
+ ip address 172.16.1.1 255.255.255.0
+ no shutdown
+
+! ---- RIPv2 路由 ----
+router rip
+ version 2
+ network 1.1.1.0
+ network 172.16.1.0
+ no auto-summary
+
+! ---- IPSec VPN（对应核心路由器的配置） ----
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha
+ authentication pre-share
+ group 2
+crypto isakmp key Branch1Key address 1.1.1.1
+crypto ipsec transform-set VPN-SET esp-aes 256 esp-sha-hmac
+access-list 120 permit ip 172.16.1.0 0.0.0.255 192.168.0.0 0.0.255.255
+crypto map VPN-MAP 10 ipsec-isakmp
+ set peer 1.1.1.1
+ set transform-set VPN-SET
+ match address 120
+interface Serial0/0/0
+ crypto map VPN-MAP
+\end{lstlisting}
+
+\subsection{分公司交换机配置（Branch-SW）}
+
+设备型号：\textbf{Cisco 1960-24TT}（每个分公司各一台）。
+
+\begin{lstlisting}[caption={分公司交换机基础配置}, label={lst:branch-sw}]
+enable
+configure terminal
+
+hostname Branch1-SW
+
+! ---- 创建本地 VLAN ----
+vlan 100
+ name Branch1-LAN
+
+! ---- 配置管理 IP ----
+interface vlan 100
+ ip address 172.16.1.2 255.255.255.0
+ no shutdown
+
+! ---- 用户端口 ----
+interface range FastEthernet0/1-24
+ switchport access vlan 100
+ no shutdown
+
+! ---- 上行端口（连接分公司路由器） ----
+interface GigabitEthernet0/1
+ switchport mode trunk
+ no shutdown
+\end{lstlisting}
+
+% ==================== 六、设备选型与工程预算 ====================
+\section{设备选型与工程预算}
+
+\subsection{核心网络设备清单}
+
+本方案所有设备均可在 Cisco Packet Tracer 8.x 平台上仿真运行。
+
+\begin{table}[H]
+\centering
+\caption{核心网络设备清单}
+\label{tab:device-list}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{设备名称}       & \textbf{型号}           & \textbf{数量} & \textbf{部署位置}   \\ \hline
+核心路由器              & Cisco 2811              & 1             & 总部中心机房         \\ \hline
+总部顶级路由器          & Cisco 2811              & 1             & 总部中心机房         \\ \hline
+ISP 路由器/VPN 服务器   & Cisco 2811              & 1             & ISP 机房             \\ \hline
+分公司路由器            & Cisco 2811              & 3             & 各分公司机房         \\ \hline
+总部核心交换机          & Cisco 2560-24PS         & 1             & 总部中心机房         \\ \hline
+部门接入交换机          & Cisco 2960              & 3             & 总部各楼层弱电间     \\ \hline
+服务器接入交换机        & Cisco 2960              & 1             & 总部中心机房         \\ \hline
+分公司交换机            & Cisco 1960-24TT         & 3             & 各分公司机房         \\ \hline
+Web 服务器              & Server-PT（模拟）       & 1             & 总部服务器区         \\ \hline
+DNS/DHCP 服务器         & Server-PT（模拟）       & 1             & 总部服务器区         \\ \hline
+FTP/Email 服务器        & Server-PT（模拟）       & 1             & 总部服务器区         \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{预算测算依据}
+
+\subsubsection{接入端口测算}
+
+1000 台 PC，每台接入交换机（Cisco 2960）提供 48 个端口，则：
+\[
+\text{所需交换机数量} = \lceil 1000 / 48 \rceil = \lceil 20.83 \rceil = 21 \text{ 台}
+\]
+
+考虑 3 个部门接入交换机 + 1 台服务器交换机共 4 台覆盖总部核心接入，其余终端通过分公司交换机（3 台 1960-24TT，每台 24 口）承载。
+
+\subsubsection{核心带宽测算}
+
+假设单用户平均带宽需求为 20 Mbps，并发率为 30\%，则核心交换机上行带宽需求为：
+\[
+\text{上行带宽} = 1000 \times 20\text{ Mbps} \times 30\% = 6000\text{ Mbps} = 6\text{ Gbps}
+\]
+
+核心交换机（2560-24PS）提供 24 个千兆端口，支持线速转发，满足带宽需求。
+
+\subsubsection{项目总预算}
+
+\begin{table}[H]
+\centering
+\caption{项目总预算}
+\begin{tabular}{|l|r|r|}
+\hline
+\textbf{设备/项目}       & \textbf{单价（万元）} & \textbf{总价（万元）} \\ \hline
+核心路由器 2811 × 1      & 5                     & 5                     \\ \hline
+总部分发路由器 2811 × 1  & 5                     & 5                     \\ \hline
+ISP 路由器 2811 × 1      & 5                     & 5                     \\ \hline
+分公司路由器 2811 × 3    & 5                     & 15                    \\ \hline
+核心交换机 2560-24PS × 1 & 8                     & 8                     \\ \hline
+接入交换机 2960 × 4      & 4.5                   & 18                    \\ \hline
+分公司交换机 1960-24TT × 3 & 2                   & 6                     \\ \hline
+服务器 × 3               & 6.67                  & 20                    \\ \hline
+综合布线                  & --                    & 10                    \\ \hline
+VPN 设备与许可            & --                    & 10                    \\ \hline
+施工与维护                & --                    & 8                     \\ \hline
+\textbf{总计}            &                       & \textbf{110}          \\ \hline
+\end{tabular}
+\end{table}
+
+项目总预算约为 110 万元，符合中小企业信息化建设预算范围。
+
+% ==================== 七、构建和测试 ====================
+\section{构建和测试}
+
+本章展示基于 Cisco Packet Tracer 平台搭建的完整网络拓扑及各项功能测试结果。
+
+\subsection{全局拓扑图}
+
+完整网络拓扑已在 Cisco Packet Tracer 中成功搭建并运行。如图 \ref{fig:total-topo} 所示，所有设备连接正确，路由协议正常工作。
+
+\subsection{内网 VLAN 通信测试}
+
+\subsubsection{同一 VLAN 内通信}
+
+测试同一 VLAN（VLAN 10 市场部）内两台 PC 之间的通信。如图 \ref{fig:inside-vlan} 所示，同 VLAN 内的终端可以正常 ping 通，二层转发正常。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{inside_vlan_free.png}
+\caption{同 VLAN 内通信测试——通信正常}
+\label{fig:inside-vlan}
+\end{figure}
+
+\subsubsection{同公司不同 VLAN 间通信}
+
+测试同一公司内部不同 VLAN 之间（如 VLAN 10 市场部与 VLAN 80 服务器区）的通信。通过三层路由（SVI 接口），不同 VLAN 间可以正常通信，如图 \ref{fig:between-vlan-inside} 所示。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{between_vlan_inside_comp_free.png}
+\caption{同公司 VLAN 间通信测试——通信正常}
+\label{fig:between-vlan-inside}
+\end{figure}
+
+\subsubsection{不同公司间通信}
+
+测试总部与分公司之间的通信。通过 RIPv2 动态路由和 IPSec VPN 隧道，总部与分公司之间通信正常（图 \ref{fig:between-vlan-comp-free}）。
+
+测试总部不同部门与分公司之间的通信（图 \ref{fig:between-vlan-comp-free}），验证 VLAN 间路由和跨站点路由的正确性。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{between_vlan_between_comp_free.png}
+\caption{总部与分公司 VLAN 间通信——通信正常}
+\label{fig:between-vlan-comp-free}
+\end{figure}
+
+\subsection{ACL 访问控制测试}
+
+验证 VLAN 10（市场部）访问 VLAN 20（财务部）被 ACL 阻止。如图 \ref{fig:acl-control} 所示，ACL 规则生效，市场部 PC 无法 ping 通财务部 PC，访问控制策略正常执行。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{between_vlan_between_comp_control.png}
+\caption{ACL 访问控制测试——市场部无法访问财务部}
+\label{fig:acl-control}
+\end{figure}
+
+\subsection{DHCP 自动地址分配测试}
+
+如图 \ref{fig:dhcp} 所示，终端通过 DHCP 成功获取 IP 地址、默认网关和 DNS 服务器地址，验证 DHCP 服务配置正确。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{dhcp_allocate_ip.png}
+\caption{DHCP 动态 IP 地址分配测试}
+\label{fig:dhcp}
+\end{figure}
+
+\subsection{互联网访问测试}
+
+通过 NAT/PAT 技术，内网终端可以正常访问互联网。如图 \ref{fig:internet} 所示，总部 PC 成功 ping 通外部服务器，并可通过 HTTP 访问外部 Web 服务，验证 NAT 转换功能正常。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{internet_funciton.png}
+\caption{内网终端访问互联网测试}
+\label{fig:internet}
+\end{figure}
+
+\subsection{FTP 服务测试}
+
+内部 PC 通过 FTP 协议成功连接并登录 FTP 服务器（192.168.80.20），可以进行文件上传和下载操作，如图 \ref{fig:ftp} 所示。同时验证外部 PC 无法访问 FTP 服务（ACL 限制），满足安全需求。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{ftp_function.png}
+\caption{FTP 服务功能测试}
+\label{fig:ftp}
+\end{figure}
+
+\subsection{Email 邮件服务测试}
+
+如图 \ref{fig:email} 所示，内部用户之间以及内外部用户之间的邮件收发功能正常，验证 Email 服务器的 SMTP 和 POP3 服务正常工作。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{email_function.png}
+\caption{Email 邮件服务功能测试}
+\label{fig:email}
+\end{figure}
+
+\subsection{VPN 功能测试}
+
+\subsubsection{内网 Ping VPN 服务器}
+
+总部内网 PC 可以成功 ping 通 VPN 服务器（ISP-Router 的内部接口），验证到达 VPN 服务器的路由可达，如图 \ref{fig:ping-vpn-server} 所示。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{inner_ping_vpn_server_success.png}
+\caption{内网 Ping VPN 服务器测试——通信正常}
+\label{fig:ping-vpn-server}
+\end{figure}
+
+\subsubsection{VPN 连接建立}
+
+远程外部 PC 通过 VPN 客户端成功与 VPN 服务器建立 IPSec 加密隧道连接，如图 \ref{fig:vpn-establish} 所示。隧道建立后，远程 PC 获得虚拟内网 IP 地址（172.16.100.0/24 地址池），可以安全访问企业内网资源。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{vpn_connect_establish.png}
+\caption{VPN 隧道建立测试——连接成功}
+\label{fig:vpn-establish}
+\end{figure}
+
+\subsubsection{VPN 连接后通信测试}
+
+VPN 隧道建立后，外部 PC 通过加密隧道成功 ping 通企业内网服务器，如图 \ref{fig:vpn-ping} 所示，验证 VPN 隧道的端到端可达性。
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{vpn_connect_ping_succcess.png}
+\caption{VPN 隧道通信测试——Ping 成功}
+\label{fig:vpn-ping}
+\end{figure}
+
+\subsection{测试结果汇总}
+
+\begin{table}[H]
+\centering
+\caption{功能测试结果汇总}
+\label{tab:test-summary}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{测试项目}           & \textbf{测试方法}    & \textbf{预期结果}   & \textbf{实际结果}   \\ \hline
+同 VLAN 内通信              & Ping                 & 通信正常            & $\checkmark$ 通过    \\ \hline
+不同 VLAN 间通信            & Ping                 & 通信正常            & $\checkmark$ 通过    \\ \hline
+ACL 部门间访问控制          & Ping（被拒绝）       & 无法通信            & $\checkmark$ 通过    \\ \hline
+DHCP 地址分配               & Ipconfig             & 正确获取 IP         & $\checkmark$ 通过    \\ \hline
+NAT 互联网访问              & Ping + HTTP          & 正常访问外网        & $\checkmark$ 通过    \\ \hline
+FTP 服务（内部）            & FTP 登录             & 正常访问            & $\checkmark$ 通过    \\ \hline
+FTP 服务（外部）            & FTP 登录（被拒绝）   & 无法访问            & $\checkmark$ 通过    \\ \hline
+Email 邮件服务              & 发送/接收邮件        & 正常收发            & $\checkmark$ 通过    \\ \hline
+内网 Ping VPN 服务器        & Ping                 & 通信正常            & $\checkmark$ 通过    \\ \hline
+VPN 隧道建立                & VPN 拨号连接         & 连接成功            & $\checkmark$ 通过    \\ \hline
+VPN 隧道通信                & Ping（隧道内）       & 通信正常            & $\checkmark$ 通过    \\ \hline
+RIPv2 路由学习              & show ip route        & 路由表完整          & $\checkmark$ 通过    \\ \hline
+分公司与总部互联            & Ping + HTTP          & 双向通信正常        & $\checkmark$ 通过    \\ \hline
+\end{tabular}
+\end{table}
+
+所有测试项目均通过，验证了本方案设计的正确性和可行性。
+
+% ==================== 八、总结与展望 ====================
+\section{总结与展望}
+
+\subsection{项目总结}
+
+本方案采用 Cisco Packet Tracer 平台，基于 \textbf{Hub-and-Spoke} 网络拓扑架构，完成了中小企业网络规划与设计。方案综合运用了以下关键网络技术：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{VLAN 逻辑隔离}：将 7 个部门和服务器区划分为 8 个独立广播域，实现二层隔离和三层互通；
+    \item \textbf{RIPv2 动态路由}：替代旧版方案中的 OSPF，使用更简洁的距离矢量路由协议实现全网路由自动学习；
+    \item \textbf{ACL 访问控制}：实现部门间精细化访问控制和 FTP 服务的内部限用策略；
+    \item \textbf{NAT 地址转换}：通过 PAT 实现内网终端共享公网 IP 访问互联网；
+    \item \textbf{IPSec VPN}：实现总部与三个分公司的站点到站点加密通信，以及远程办公人员的安全接入；
+    \item \textbf{DHCP 自动编址}：实现终端 IP 地址的自动分配和管理；
+    \item \textbf{STP 环路防护}：确保二层网络的稳定运行。
+\end{enumerate}
+
+\subsection{方案特色}
+
+与旧版方案相比，本 V2 方案具有以下改进和特色：
+
+\begin{itemize}
+    \item \textbf{更清晰的层次结构}：采用 Hub-and-Spoke 架构，核心路由器作为全网枢纽，层次分明，便于管理和故障排查；
+    \item \textbf{真实的设备选型}：使用 Cisco Packet Tracer 中具体可仿真的设备型号（2811 路由器、2560-24PS 交换机、2960 交换机、1960-24TT 交换机）；
+    \item \textbf{双重 VPN 架构}：同时支持站点到站点 VPN 和远程访问 VPN，满足更多业务场景；
+    \item \textbf{服务整合}：将 DNS 与 DHCP 整合、FTP 与 Email 整合，减少服务器数量，降低运维成本；
+    \item \textbf{更全面的测试覆盖}：包含 13 项功能测试，覆盖 VLAN、ACL、DHCP、NAT、FTP、Email、VPN 等全部功能点；
+    \item \textbf{实用优先的设计理念}：RIPv2 相比 OSPF 在小网络中配置更简单，更适合中小企业的实际运维能力。
+\end{itemize}
+
+\subsection{未来展望}
+
+本方案虽然已满足当前需求，但仍可在以下方面进行改进和扩展：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{高可用性}：引入 HSRP/VRRP 网关冗余协议，部署双核心路由器和双核心交换机，消除单点故障；
+    \item \textbf{安全增强}：部署独立的防火墙设备（如 Cisco ASA），在 DMZ 区部署对外服务器，实现更严格的安全隔离；
+    \item \textbf{QoS 质量保证}：引入 QoS 策略，为 VoIP、视频会议等实时业务提供带宽保障；
+    \item \textbf{无线网络覆盖}：增加无线 AP 和无线控制器（WLC），支持移动办公终端接入；
+    \item \textbf{IPv6 支持}：引入 IPv6 双栈部署，为未来网络演进做好准备；
+    \item \textbf{网络监控}：部署 SNMP 网络管理系统（如 Cisco Prime），实现全网设备的集中监控和故障告警。
+\end{enumerate}
+
+\vspace{1cm}
+
+\begin{flushright}
+\begin{minipage}{6cm}
+\centering
+\rule{6cm}{0.4pt}\\[0.3cm]
+\textbf{参考文献}
+
+{[1]} Cisco Systems, Inc. \textit{Cisco IOS IP Routing: RIP Configuration Guide}. Cisco Documentation, 2024.
+
+{[2]} William Stallings. \textit{Data and Computer Communications}. 10th Edition, Pearson, 2019.
+
+{[3]} James F. Kurose, Keith W. Ross. \textit{Computer Networking: A Top-Down Approach}. 8th Edition, Pearson, 2020.
+
+{[4]} Cisco Networking Academy. \textit{CCNA Routing and Switching: Connecting Networks}. Cisco Press, 2023.
+
+{[5]} 谢希仁. \textit{计算机网络}. 第8版, 电子工业出版社, 2021.
+\end{minipage}
+\end{flushright}
+
+\end{document}

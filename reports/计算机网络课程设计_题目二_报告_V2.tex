@@ -68,7 +68,7 @@
 \titleformat{\subsubsection}{\normalsize\bfseries}{}{0em}{}[]
 
 % ============ 图片路径 ============
-\graphicspath{{Assets/v2/}}
+\graphicspath{{assets/v2/}}
 
 \begin{document}
 
@@ -84,7 +84,7 @@
     {\LARGE\textbf{计算机网络课程设计}}\\[0.3cm]
     {\LARGE\textbf{实验报告}}\\[1.2cm]
 
-    \includegraphics[width=0.4\textwidth]{../../Tongji.png}\\[1.2cm]
+    \includegraphics[width=0.4\textwidth]{Tongji.png}\\[1.2cm]
 
     \begin{large}
     \begin{tabular}{rl}
@@ -298,6 +298,132 @@ VPN 客户端地址池         & 172.16.100.0/24           & 255.255.255.0      
 \end{tabular}
 \end{table}
 
+\subsection{业务流量与访问关系分析}
+
+在进行具体网络设备配置之前，需要先明确企业内部各类业务系统的访问路径。中小企业网络虽然规模小于大型园区网，但其业务类型较完整，既包含普通办公终端的互联网访问，也包含跨部门访问、服务器区访问、分公司接入以及远程办公接入等多类流量。如果在设计阶段没有区分业务流量类型，后续 ACL、NAT、VPN 和路由策略容易出现规则重叠或控制粒度不足的问题。
+
+本方案将企业流量划分为以下六类：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{部门内部流量}：同一 VLAN 内终端之间的文件共享、打印、局域网协作等，主要在二层交换网络内转发；
+    \item \textbf{部门间流量}：不同 VLAN 之间的业务访问，需要经过三层网关转发，并受 ACL 策略控制；
+    \item \textbf{用户到服务器区流量}：各部门访问 OA、DNS、DHCP、Web、Email、FTP 等服务，属于最核心的内部业务流量；
+    \item \textbf{分公司到总部流量}：分公司终端通过站点到站点 VPN 访问总部服务器区和必要的业务系统；
+    \item \textbf{内网到互联网流量}：所有内部私有地址通过 NAT/PAT 转换后访问外部网络；
+    \item \textbf{远程办公流量}：外部员工通过远程访问 VPN 获取虚拟内网地址，再访问总部内部资源。
+\end{enumerate}
+
+上述流量的控制原则为：部门内部默认允许；部门之间按照最小权限开放；服务器区只开放必要端口；FTP 服务只允许内网访问；远程办公用户必须先建立 VPN 隧道；外部互联网不能直接访问 OA 和内部 FTP 服务。通过这种方式，可以在满足业务连通性的同时降低横向移动和非法访问风险。
+
+\begin{table}[H]
+\centering
+\caption{主要业务流量路径与控制策略}
+\label{tab:traffic-policy}
+\begin{tabular}{|p{3.2cm}|p{3.5cm}|p{3.5cm}|p{3.5cm}|}
+\hline
+\textbf{流量类型} & \textbf{源地址范围} & \textbf{目的地址范围} & \textbf{控制策略} \\ \hline
+部门内部通信 & 同一 VLAN 内终端 & 同一 VLAN 内终端 & 二层转发，默认允许 \\ \hline
+普通部门访问服务器 & VLAN 10--70 & VLAN 80 & 允许 HTTP、DNS、Email、必要 OA 端口 \\ \hline
+普通部门访问财务部 & VLAN 10/70 等 & VLAN 20 & 默认禁止，仅开放审批业务端口 \\ \hline
+研发部访问服务器 & VLAN 40 & VLAN 80 & 允许开发与文件相关服务，保留日志 \\ \hline
+分公司访问总部 & 172.16.1.0/24--172.16.3.0/24 & 192.168.0.0/16 & 经 IPSec VPN 加密，按 ACL 放行 \\ \hline
+内网访问互联网 & 192.168.0.0/16、172.16.0.0/16 & Internet & 通过 PAT 转换，隐藏内网地址 \\ \hline
+外部访问企业门户 & Internet & Web Server & 仅开放 HTTP/必要邮件服务 \\ \hline
+外部访问 FTP & Internet & FTP Server & 默认拒绝 \\ \hline
+远程办公访问 OA & VPN 地址池 & VLAN 80 & VPN 认证成功后允许访问 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{地址容量与可扩展性分析}
+
+总部约 1000 台 PC 分布在 7 个部门中。每个部门使用 /24 子网可以提供 254 个可用地址。若平均分配，每个部门约 143 台终端，/24 子网能够满足当前容量；若某些部门终端数量较多，也可以通过新增 VLAN 或将部门拆分为多个楼层 VLAN 的方式扩展。
+
+本方案为每个部门预留了独立网段，避免所有终端集中在同一个大广播域中。这样做的好处包括：第一，广播报文被限制在本部门 VLAN 内，减少无效流量；第二，部门网关地址固定，便于 DHCP 地址池和 ACL 策略编写；第三，后续扩容时可以按部门或楼层逐步增加接入交换机，不需要重构全网地址规划。
+
+\begin{table}[H]
+\centering
+\caption{总部部门容量估算}
+\label{tab:capacity}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\textbf{部门} & \textbf{VLAN} & \textbf{预计终端数} & \textbf{可用地址数} & \textbf{地址余量} \\ \hline
+市场部 & VLAN 10 & 150 & 254 & 104 \\ \hline
+财务部 & VLAN 20 & 80 & 254 & 174 \\ \hline
+人事部 & VLAN 30 & 80 & 254 & 174 \\ \hline
+研发部 & VLAN 40 & 260 & 254 & -6 \\ \hline
+行政部 & VLAN 50 & 100 & 254 & 154 \\ \hline
+运营部 & VLAN 60 & 180 & 254 & 74 \\ \hline
+客服部 & VLAN 70 & 150 & 254 & 104 \\ \hline
+服务器区 & VLAN 80 & 20 & 254 & 234 \\ \hline
+\end{tabular}
+\end{table}
+
+从容量估算可以看出，研发部在业务增长情况下可能超过单个 /24 子网的舒适容量。因此在实际工程中建议为研发部预留 VLAN 41 或 VLAN 42，用作测试实验网、代码构建网或研发无线接入网。课程设计仿真中仍保留 VLAN 40 的 /24 规划，以保证拓扑清晰和配置简洁。
+
+\subsection{部门安全等级划分}
+
+企业网络并非所有部门安全等级相同。财务、人事和服务器区保存敏感数据，研发部保存代码和设计资料，市场、运营、客服等部门主要面向日常业务系统。因此，本方案根据业务敏感性将部门划分为三个安全等级，并据此配置 ACL 策略。
+
+\begin{longtable}{|p{2.8cm}|p{2.2cm}|p{4cm}|p{5cm}|}
+\caption{部门安全等级与访问控制原则}
+\label{tab:security-level}\\
+\hline
+\textbf{网络区域} & \textbf{安全等级} & \textbf{主要资产} & \textbf{访问控制原则} \\ \hline
+\endfirsthead
+\hline
+\textbf{网络区域} & \textbf{安全等级} & \textbf{主要资产} & \textbf{访问控制原则} \\ \hline
+\endhead
+服务器区 VLAN 80 & 高 & OA、Web、DNS、DHCP、FTP、Email & 只开放业务端口，禁止普通终端直接管理服务器 \\ \hline
+财务部 VLAN 20 & 高 & 财务报表、预算、工资数据 & 禁止普通部门主动访问，必要业务通过服务器中转 \\ \hline
+人事部 VLAN 30 & 高 & 员工档案、招聘资料 & 限制跨部门访问，仅允许 OA 业务流量 \\ \hline
+研发部 VLAN 40 & 中高 & 源代码、测试资料、技术文档 & 允许访问内部服务器，禁止外部直接访问研发终端 \\ \hline
+行政部 VLAN 50 & 中 & 行政审批、办公资料 & 允许访问 OA 和邮件服务，限制访问财务终端 \\ \hline
+运营部 VLAN 60 & 中 & 运营数据、业务报表 & 允许访问内部业务系统，限制敏感部门访问 \\ \hline
+市场部 VLAN 10 & 普通 & 市场资料、客户沟通文档 & 允许互联网与 OA 访问，禁止访问财务部 \\ \hline
+客服部 VLAN 70 & 普通 & 客服工单、客户咨询记录 & 允许业务系统访问，禁止访问财务部 \\ \hline
+分公司网段 & 中 & 分公司办公终端与本地业务资料 & 经 VPN 访问总部资源，按源网段控制权限 \\ \hline
+远程 VPN 地址池 & 中高 & 外部移动办公终端 & 认证后访问内网，建议配合强密码与日志审计 \\ \hline
+\end{longtable}
+
+安全等级划分并不是为了完全阻断部门之间的协作，而是为了减少非必要的横向访问。例如市场部确实可能需要提交报销单据，但该操作应通过 OA 系统完成，而不应直接访问财务部终端所在网段。将业务访问收敛到服务器区，能够让权限控制点更集中，也便于日志记录和审计。
+
+\subsection{逻辑拓扑与物理拓扑对应关系}
+
+在 Packet Tracer 仿真中，拓扑图表现的是设备和连线；在实际工程中，还需要考虑机房、弱电间、楼层、链路介质和故障域。本方案将逻辑拓扑与物理部署对应如下：
+
+\begin{itemize}
+    \item \textbf{中心机房}：放置核心路由器、总部顶级路由器、总部核心交换机和服务器接入交换机，是全网核心区域；
+    \item \textbf{楼层弱电间}：放置部门接入交换机，使用光纤或六类线缆上联核心交换机；
+    \item \textbf{分公司机房}：每个分公司部署一台边界路由器和一台接入交换机，通过公网链路与总部建立 VPN；
+    \item \textbf{ISP 接入点}：连接企业出口路由器，为企业提供公网访问、远程办公入口和外部测试环境。
+\end{itemize}
+
+逻辑拓扑和物理拓扑分离的好处在于：网络管理员可以在不改变部门逻辑结构的情况下迁移物理终端。例如客服部从二楼迁移到三楼时，只需调整接入交换机端口所属 VLAN，而不需要修改 IP 地址规划、路由协议或服务器策略。
+
+\subsection{命名规范与管理规范}
+
+统一命名规范能够降低网络维护难度。本方案中的设备名称、接口描述、VLAN 名称和地址池名称均采用可读性较强的英文缩写，便于在命令行中快速定位问题。
+
+\begin{table}[H]
+\centering
+\caption{设备与配置命名规范}
+\label{tab:naming-rule}
+\begin{tabular}{|p{3cm}|p{4cm}|p{6cm}|}
+\hline
+\textbf{对象} & \textbf{命名示例} & \textbf{说明} \\ \hline
+总部核心路由器 & Core-Router & 全网 Hub 节点，连接 ISP、总部和分公司 \\ \hline
+总部边界路由器 & HQ-Router & 总部内部网络出口路由器 \\ \hline
+总部核心交换机 & HQ-Core-SW & 承载 VLAN 与服务器区汇聚 \\ \hline
+分公司路由器 & Branch1-Router & 分公司边界路由器，数字表示分公司编号 \\ \hline
+分公司交换机 & Branch1-SW & 分公司接入交换机 \\ \hline
+VLAN 名称 & MARKET、FINANCE & 使用部门英文名称，便于识别 \\ \hline
+DHCP 地址池 & DHCP-MARKET & 与 VLAN 名称一致，降低误配置概率 \\ \hline
+ACL 名称/编号 & ACL-FTP 或 110 & 按业务用途区分访问控制规则 \\ \hline
+\end{tabular}
+\end{table}
+
+在实际运维中，还应为接口增加 description 字段。例如连接 ISP 的接口标注为 ``Link-to-ISP''，连接分公司的串行接口标注为 ``Link-to-Branch1''。当链路故障时，管理员可以通过 \texttt{show interface description} 快速确定故障链路位置。
+
 % ==================== 四、网络结构设计 ====================
 \section{网络结构设计}
 
@@ -399,6 +525,192 @@ ISP 侧的外部 PC 通过 VPN 客户端软件，经过公网连接到 VPN 服�
     \item \textbf{STP 环路防护}：在总部二层交换网络中启用生成树协议，防止广播风暴和 MAC 地址表震荡；
     \item \textbf{路由安全}：RIPv2 支持 MD5 认证（可在后续升级中启用），防止路由欺骗。
 \end{enumerate}
+
+\subsection{路由设计深化}
+
+本方案选择 RIPv2 作为全网动态路由协议。虽然 RIPv2 的最大跳数限制为 15 跳，不适合大型复杂网络，但对于本项目的 Hub-and-Spoke 架构而言，总部、ISP 与三个分公司之间的路由层级较少，网络规模可控，RIPv2 的配置简单性和可读性更符合课程设计与中小企业运维场景。
+
+\subsubsection{RIPv2 与静态路由对比}
+
+如果全部使用静态路由，每新增一个分公司或服务器网段，都需要在多台路由器上手动添加回程路由。随着网络扩展，静态路由维护成本会快速上升，并且容易出现遗漏。RIPv2 能够自动学习各网段，降低配置复杂度。
+
+\begin{table}[H]
+\centering
+\caption{RIPv2 与静态路由方案对比}
+\label{tab:rip-static}
+\begin{tabular}{|p{3cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{比较项} & \textbf{RIPv2 动态路由} & \textbf{静态路由} \\ \hline
+配置复杂度 & 初始配置较简单，声明直连网段即可 & 每条目的网段都需要手工配置 \\ \hline
+扩展性 & 新增网段后可自动传播 & 需要逐台设备补充路由 \\ \hline
+故障恢复 & 链路变化后可重新收敛 & 需要人工调整下一跳 \\ \hline
+资源消耗 & 周期性更新，占用少量带宽 & 几乎不占用协议带宽 \\ \hline
+适用场景 & 小型和中型网络、教学实验 & 小规模固定拓扑、默认路由 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{路由收敛过程}
+
+当分公司路由器启动后，会通过直连串行链路向核心路由器发送 RIPv2 更新报文。核心路由器学习到分公司 172.16.x.0/24 网段后，再将该信息通告给总部路由器和其他分公司路由器。总部路由器也会将 192.168.10.0/24 至 192.168.80.0/24 等网段通告给核心路由器，使分公司能够获得访问总部服务器区和各部门 VLAN 的路径。
+
+为了避免 RIPv1 的有类汇总问题，本方案在所有 RIP 进程中配置 \texttt{no auto-summary}。该命令可以防止路由器在主类边界自动汇总网段，保证 192.168.x.0/24、172.16.x.0/24 和点到点 /30 网段能够按实际掩码传播。
+
+\subsubsection{默认路由传播}
+
+企业内网访问互联网时，需要将未知目的地址转发到 ISP。可以在 Core-Router 上配置默认路由指向 ISP，再通过 RIP 将默认路由下发给总部与分公司路由器。在 Packet Tracer 中也可以采用各路由器手工配置默认路由的方式，便于观察路径。
+
+\begin{lstlisting}[caption={默认路由与 RIP 默认路由传播示意}, label={lst:default-route}]
+! ---- Core-Router 上配置默认路由 ----
+ip route 0.0.0.0 0.0.0.0 202.100.1.1
+
+! ---- 在 RIP 中通告默认路由 ----
+router rip
+ version 2
+ default-information originate
+\end{lstlisting}
+
+默认路由传播后，总部和分公司终端访问外部地址时，会先将数据包送至本地网关，再沿 RIP 学习到的默认路径到达 Core-Router，并通过 NAT/PAT 转换后进入 ISP 网络。
+
+\subsection{VPN 安全机制深化}
+
+VPN 是本方案区别于普通园区网设计的重要部分。企业分公司跨省部署，不能假设公网链路可信，因此需要通过 IPSec 为站点间通信提供机密性、完整性和身份认证。
+
+\subsubsection{IPSec 工作阶段}
+
+IPSec VPN 通常分为两个阶段：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{IKE Phase 1}：双方协商加密算法、散列算法、认证方式和 DH 密钥交换组，建立 ISAKMP 安全关联；
+    \item \textbf{IKE Phase 2}：在 Phase 1 的安全通道内协商 IPSec 参数，建立用于实际业务数据加密的 IPSec SA。
+\end{enumerate}
+
+本方案采用 AES-256 作为加密算法，SHA 作为完整性校验算法，使用预共享密钥完成对等体身份认证。对于课程设计和 Packet Tracer 仿真而言，该配置足以体现 IPSec 的核心流程；在真实生产网络中，可进一步使用证书认证替代预共享密钥。
+
+\begin{table}[H]
+\centering
+\caption{IPSec VPN 参数设计}
+\label{tab:vpn-param}
+\begin{tabular}{|p{4cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{参数} & \textbf{取值} & \textbf{设计理由} \\ \hline
+加密算法 & AES 256 & 加密强度较高，适合保护企业业务数据 \\ \hline
+散列算法 & SHA & 校验数据完整性，防止传输中被篡改 \\ \hline
+认证方式 & Pre-Shared Key & 配置简单，适合实验和小型网络 \\ \hline
+DH 组 & Group 2 & Packet Tracer 支持度较好，便于验证 \\ \hline
+生命周期 & 86400 秒 & 兼顾安全性和重协商开销 \\ \hline
+加密流量匹配 & ACL 120--122 & 精确指定总部与分公司互访流量 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{感兴趣流量设计}
+
+IPSec 并不是对接口上的所有流量都加密，而是通过 ACL 匹配“感兴趣流量”。例如总部 192.168.0.0/16 访问 Branch1 的 172.16.1.0/24 时触发 VPN 隧道，普通互联网访问流量则走 NAT 出口。这样可以避免将无关流量引入 VPN，提高链路利用效率。
+
+需要注意的是，站点间 VPN 的 ACL 必须在两端保持镜像关系。总部侧写作 ``源为总部网段、目的为分公司网段''，分公司侧则写作 ``源为分公司网段、目的为总部网段''。如果两端 ACL 不匹配，即使 IKE Phase 1 成功，也可能无法建立 Phase 2 的 IPSec SA。
+
+\subsection{ACL 策略设计深化}
+
+ACL 访问控制的关键不只是写出 deny 和 permit 规则，还要考虑规则顺序、应用方向和部署位置。本方案遵循“靠近源端阻断非法流量，靠近目的端保护关键服务器”的原则。
+
+\subsubsection{规则顺序}
+
+Cisco ACL 按从上到下的顺序匹配，命中第一条规则后立即停止。因此，拒绝规则必须写在允许全部流量之前。若将 \texttt{permit ip any any} 放在 deny 之前，后续拒绝规则将永远不会生效。
+
+\begin{lstlisting}[caption={ACL 规则顺序示例}, label={lst:acl-order}]
+! 正确顺序：先拒绝，再允许其他流量
+access-list 100 deny ip 192.168.10.0 0.0.0.255 192.168.20.0 0.0.0.255
+access-list 100 permit ip any any
+
+! 错误示例：第一条 permit 已匹配全部流量，deny 不会生效
+access-list 100 permit ip any any
+access-list 100 deny ip 192.168.10.0 0.0.0.255 192.168.20.0 0.0.0.255
+\end{lstlisting}
+
+\subsubsection{应用方向}
+
+ACL 可以应用在接口入方向或出方向。对于市场部访问财务部的限制，将 ACL 应用在 VLAN 10 入方向，可以在流量刚进入三层网关时即被阻断，减少核心层不必要转发。对于 FTP 服务器保护，将 ACL 应用在服务器区出方向或入口方向，需要结合拓扑中服务器区网关位置确定。
+
+\begin{table}[H]
+\centering
+\caption{ACL 应用位置设计}
+\label{tab:acl-place}
+\begin{tabular}{|p{3cm}|p{4cm}|p{3cm}|p{4cm}|}
+\hline
+\textbf{控制目标} & \textbf{ACL 内容} & \textbf{建议位置} & \textbf{原因} \\ \hline
+市场部禁止访问财务部 & deny VLAN10 to VLAN20 & VLAN10 入方向 & 靠近源端阻断 \\ \hline
+客服部禁止访问财务部 & deny VLAN70 to VLAN20 & VLAN70 入方向 & 减少无效跨 VLAN 转发 \\ \hline
+外部禁止 FTP & deny outside to FTP & 服务器区或边界入口 & 保护关键服务器 \\ \hline
+VPN 触发流量 & permit HQ to Branch & VPN 对等接口 & 匹配 IPSec 感兴趣流量 \\ \hline
+OA 内部访问 & permit inside to OA & 服务器区入口 & 只开放必要业务端口 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{服务器区与 DMZ 设计讨论}
+
+本次 Packet Tracer 方案中，Web、FTP、Email、DNS/DHCP 等服务统一部署在总部服务器区 VLAN 80。对于课程设计而言，该方式结构清晰，便于验证服务连通性和 ACL 控制。但在真实企业环境中，对外服务通常建议部署在 DMZ 区，与内部 OA、DHCP 和数据库等系统隔离。
+
+\subsubsection{当前服务器区设计}
+
+当前设计的优点是部署成本低、管理简单、配置量适中。所有服务器位于同一个 VLAN，网关统一为 192.168.80.1，部门终端通过三层交换访问服务器区，外部访问通过边界策略控制。
+
+当前设计的不足是安全边界较集中。如果 Web 服务因漏洞被攻击，攻击者可能尝试横向扫描同一服务器区内的其他服务。因此，本方案在安全展望中建议后续增加独立防火墙和 DMZ。
+
+\subsubsection{可升级 DMZ 方案}
+
+若进行生产化升级，可以将服务器区拆分为三个区域：
+
+\begin{itemize}
+    \item \textbf{DMZ 区}：部署企业门户 Web、对外邮件网关等允许互联网访问的服务；
+    \item \textbf{内部服务区}：部署 OA、DHCP、DNS 内部解析、文件服务等仅内网访问的服务；
+    \item \textbf{管理区}：部署日志服务器、网络管理系统、备份服务器，仅允许管理员访问。
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{服务器区升级规划}
+\label{tab:dmz-upgrade}
+\begin{tabular}{|p{3cm}|p{3cm}|p{4cm}|p{4cm}|}
+\hline
+\textbf{区域} & \textbf{建议 VLAN} & \textbf{部署服务} & \textbf{访问策略} \\ \hline
+DMZ 区 & VLAN 81 & Web、邮件网关 & 允许外部访问指定端口 \\ \hline
+内部服务区 & VLAN 80 & OA、FTP、内部 DNS & 只允许内网和 VPN 访问 \\ \hline
+管理区 & VLAN 90 & Syslog、SNMP、备份 & 只允许管理员网段访问 \\ \hline
+数据库区 & VLAN 91 & OA 数据库 & 只允许应用服务器访问 \\ \hline
+\end{tabular}
+\end{table}
+
+上述升级方案可以在不改变总体 Hub-and-Spoke 架构的前提下提高安全性。由于本课程设计重点是验证 VLAN、路由、NAT、VPN、ACL 和基础服务，因此 V2 方案保留统一服务器区，并在报告中给出升级路径。
+
+\subsection{可靠性设计}
+
+可靠性设计需要从设备、链路、协议和管理四个层面考虑。Packet Tracer 仿真环境中设备数量有限，但设计思路仍应体现工程可落地性。
+
+\subsubsection{设备可靠性}
+
+核心路由器和核心交换机是当前拓扑中的关键节点。若 Core-Router 故障，总部、分公司和互联网之间的通信都会受到影响；若 HQ-Core-SW 故障，总部各 VLAN 和服务器区通信会中断。因此在真实部署中应考虑双核心设备冗余。
+
+\subsubsection{链路可靠性}
+
+总部到 ISP、总部到分公司链路可以采用主备线路。主线路可选择专线或企业宽带，备线路可选择 4G/5G CPE 或第二运营商宽带。通过浮动静态路由或动态路由度量值调整，可以实现故障时自动切换。
+
+\subsubsection{协议可靠性}
+
+二层网络中启用 STP 避免环路；三层网络中启用动态路由自动适应链路变化；VPN 通过 SA 生命周期定期重协商密钥，减少长期使用同一密钥带来的风险。对于关键服务器，可通过定期备份、双网卡绑定和服务监控提高可用性。
+
+\begin{table}[H]
+\centering
+\caption{可靠性措施汇总}
+\label{tab:reliability}
+\begin{tabular}{|p{3cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{层面} & \textbf{当前方案} & \textbf{后续增强方案} \\ \hline
+核心设备 & 单核心路由器、单核心交换机 & 双核心设备、HSRP/VRRP 网关冗余 \\ \hline
+出口链路 & 单 ISP 链路 & 双 ISP、多出口策略路由 \\ \hline
+分公司链路 & 单 VPN 隧道 & 主备 VPN 隧道、链路探测 \\ \hline
+二层网络 & STP 环路保护 & RSTP/MSTP、链路聚合 \\ \hline
+服务器 & 单实例服务 & 主备服务器、定期备份、日志监控 \\ \hline
+\end{tabular}
+\end{table}
 
 % ==================== 五、系统配置与实施 ====================
 \section{系统配置与实施}
@@ -819,6 +1131,168 @@ interface GigabitEthernet0/1
  no shutdown
 \end{lstlisting}
 
+\subsection{实施步骤与上线流程}
+
+网络工程实施不能只依赖最终配置，还需要明确部署顺序。合理的上线流程可以降低故障范围，便于分阶段验证。本方案在 Packet Tracer 中按“基础连通、路由互通、业务服务、安全策略、VPN 接入、综合验证”的顺序实施。
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{设备摆放与连线}：在 Packet Tracer 中添加核心路由器、总部路由器、ISP 路由器、分公司路由器、核心交换机、接入交换机和服务器，并按照拓扑图连接链路；
+    \item \textbf{基础接口配置}：为各路由器接口、交换机 SVI、服务器和终端配置 IP 地址，确保所有直连链路状态为 up；
+    \item \textbf{VLAN 与 Trunk 配置}：在总部核心交换机上创建 VLAN 10--80，将接入端口划入对应 VLAN，并配置上行 Trunk；
+    \item \textbf{动态路由配置}：在总部、核心、ISP 和分公司路由器上启用 RIPv2，关闭自动汇总，检查路由表是否学习到远端网段；
+    \item \textbf{DHCP 与 DNS 配置}：配置 DHCP 地址池和 DNS 解析记录，验证终端能够自动获得地址并解析域名；
+    \item \textbf{NAT 出口配置}：配置内外网接口、NAT ACL 和 PAT 规则，验证内网终端可访问外网；
+    \item \textbf{ACL 安全策略配置}：逐项添加部门访问限制和服务器访问限制，每添加一条规则后立即测试；
+    \item \textbf{IPSec VPN 配置}：配置 IKE、转换集、加密 ACL 和 crypto map，验证站点间隧道建立；
+    \item \textbf{远程访问 VPN 配置}：配置 VPN 用户、地址池和远程接入策略，验证外部 PC 可拨入企业内网；
+    \item \textbf{综合验收测试}：按照测试用例逐项记录结果，形成测试截图和测试表格。
+\end{enumerate}
+
+\begin{longtable}{|p{2.5cm}|p{4cm}|p{4cm}|p{3.5cm}|}
+\caption{实施阶段检查表}
+\label{tab:deploy-checklist}\\
+\hline
+\textbf{阶段} & \textbf{关键任务} & \textbf{检查命令/方法} & \textbf{通过标准} \\ \hline
+\endfirsthead
+\hline
+\textbf{阶段} & \textbf{关键任务} & \textbf{检查命令/方法} & \textbf{通过标准} \\ \hline
+\endhead
+物理连线 & 完成设备连接 & 查看链路指示灯 & 接口绿灯，链路 up \\ \hline
+接口配置 & 配置 IP 与掩码 & \texttt{show ip interface brief} & 地址正确，状态 up/up \\ \hline
+VLAN 配置 & 创建 VLAN 与端口划分 & \texttt{show vlan brief} & 端口属于正确 VLAN \\ \hline
+Trunk 配置 & 配置交换机上行链路 & \texttt{show interfaces trunk} & 允许 VLAN 10--80 通过 \\ \hline
+路由配置 & 启用 RIPv2 & \texttt{show ip route} & 出现 R 标记路由 \\ \hline
+DHCP 配置 & 地址池与网关下发 & PC 使用 DHCP 获取地址 & IP、网关、DNS 均正确 \\ \hline
+NAT 配置 & PAT 转换 & \texttt{show ip nat translations} & 产生转换记录 \\ \hline
+ACL 配置 & 部门访问控制 & Ping/访问测试 & 禁止项不通，允许项正常 \\ \hline
+VPN 配置 & 隧道协商 & \texttt{show crypto isakmp sa} & 状态为 QM\_IDLE 或连接成功 \\ \hline
+业务服务 & Web/FTP/Email/DNS & 浏览器、FTP、邮件客户端 & 服务可用且权限正确 \\ \hline
+\end{longtable}
+
+\subsection{配置备份与版本管理}
+
+在实际网络工程中，设备配置应当在每次变更后进行备份。虽然 Packet Tracer 文件已经保存了拓扑和配置，但报告仍应体现配置版本管理思想。建议按以下规则保存配置：
+
+\begin{itemize}
+    \item 每完成一个功能模块后保存一次 Packet Tracer 文件，如 \texttt{V2-routing-ok.pkt}、\texttt{V2-vpn-ok.pkt}；
+    \item 每台关键设备导出 running-config，按设备名称和日期命名；
+    \item 配置变更前记录原配置，变更后记录新增命令和测试结果；
+    \item 对 ACL、NAT、VPN 等安全相关配置单独标注变更原因；
+    \item 最终交付文件包括拓扑文件、实验报告、测试截图和配置清单。
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{配置文件命名建议}
+\label{tab:config-version}
+\begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{文件类型} & \textbf{命名示例} & \textbf{用途} \\ \hline
+拓扑文件 & \texttt{enterprise-network-v2-final.pkt} & 保存完整仿真拓扑 \\ \hline
+核心路由器配置 & \texttt{Core-Router-20260623.cfg} & 备份核心路由器配置 \\ \hline
+核心交换机配置 & \texttt{HQ-Core-SW-20260623.cfg} & 备份 VLAN 与 ACL 配置 \\ \hline
+分公司配置 & \texttt{Branch1-Router-20260623.cfg} & 备份分公司 VPN 与路由配置 \\ \hline
+测试记录 & \texttt{test-record-v2.xlsx} & 记录测试用例与结果 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{常见故障与排查方法}
+
+网络配置过程中常见问题包括接口未启用、网关错误、VLAN 划分错误、RIP 未学习路由、ACL 误拦截、NAT 方向配置错误和 VPN 两端参数不一致。排错时应遵循从物理层到应用层的顺序，逐层定位。
+
+\subsubsection{连通性排查顺序}
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item 检查终端 IP、子网掩码、默认网关和 DNS 是否正确；
+    \item Ping 本机网关，确认同 VLAN 到网关的二层与三层连通；
+    \item Ping 同一设备的远端接口，确认路由器或三层交换机转发正常；
+    \item 查看路由表，确认是否存在到目标网段的路由；
+    \item 暂时查看 ACL 命中情况，确认是否被访问控制规则拦截；
+    \item 对互联网访问问题查看 NAT 转换表；
+    \item 对 VPN 问题查看 IKE 和 IPSec SA 状态；
+    \item 最后检查应用服务端口是否开启，例如 HTTP、FTP、SMTP、POP3。
+\end{enumerate}
+
+\begin{longtable}{|p{3cm}|p{4cm}|p{4cm}|p{3.5cm}|}
+\caption{常见故障排查表}
+\label{tab:troubleshooting}\\
+\hline
+\textbf{故障现象} & \textbf{可能原因} & \textbf{排查方法} & \textbf{处理方式} \\ \hline
+\endfirsthead
+\hline
+\textbf{故障现象} & \textbf{可能原因} & \textbf{排查方法} & \textbf{处理方式} \\ \hline
+\endhead
+PC 无法获取地址 & DHCP 未启用或网关错误 & 查看 DHCP 地址池与服务器状态 & 启用 DHCP，修正网关和 DNS \\ \hline
+同 VLAN 不通 & 端口 VLAN 配置错误 & \texttt{show vlan brief} & 将端口划入正确 VLAN \\ \hline
+跨 VLAN 不通 & SVI 未开启或路由缺失 & \texttt{show ip interface brief} & 开启 SVI，检查三层转发 \\ \hline
+分公司无法访问总部 & RIP 未通告或 VPN 未建立 & \texttt{show ip route}、VPN 状态 & 修正 network 命令和 VPN 参数 \\ \hline
+内网无法访问外网 & NAT 方向或 ACL 错误 & \texttt{show ip nat translations} & 修正 inside/outside 与 NAT ACL \\ \hline
+FTP 外部仍可访问 & ACL 应用方向错误 & 测试外部 FTP 连接 & 调整 ACL 部署接口和方向 \\ \hline
+市场部可访问财务部 & ACL 顺序错误 & 查看 ACL 配置顺序 & 将 deny 放在 permit 之前 \\ \hline
+VPN 拨号失败 & 用户、密钥或地址池错误 & 检查 VPN 客户端配置 & 修正用户名、组密钥和地址池 \\ \hline
+邮件无法收发 & SMTP/POP3 未开启或 DNS 错误 & 测试邮件服务器和域名解析 & 开启服务，修正 DNS 记录 \\ \hline
+网页无法打开 & HTTP 服务未开启或 NAT/ACL 拦截 & 浏览器访问服务器 IP & 开启 HTTP，放行必要端口 \\ \hline
+\end{longtable}
+
+\subsection{运行维护方案}
+
+网络上线后，维护工作主要包括日常巡检、故障处理、配置备份、安全审计和容量评估。良好的运维制度能够减少人为误操作，并在出现故障时缩短恢复时间。
+
+\subsubsection{日常巡检内容}
+
+\begin{itemize}
+    \item 每日检查核心路由器、核心交换机和服务器运行状态；
+    \item 每日检查关键链路接口状态和错误包计数；
+    \item 每周检查 DHCP 地址池使用率，避免地址耗尽；
+    \item 每周检查 NAT 转换、VPN 连接和路由表变化；
+    \item 每月备份所有关键设备配置；
+    \item 每月复核 ACL 规则，删除不再使用的临时放行策略；
+    \item 每季度进行一次故障演练，包括出口中断、VPN 中断和服务器服务停止等场景。
+\end{itemize}
+
+\begin{table}[H]
+\centering
+\caption{运维巡检计划}
+\label{tab:ops-plan}
+\begin{tabular}{|p{3cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{周期} & \textbf{巡检内容} & \textbf{输出结果} \\ \hline
+每日 & 设备状态、接口状态、服务器服务状态 & 日巡检记录 \\ \hline
+每周 & DHCP 地址池、VPN 连接、路由表、NAT 转换 & 周报与异常清单 \\ \hline
+每月 & 配置备份、ACL 复核、日志归档 & 配置备份包与安全审计记录 \\ \hline
+每季度 & 容量评估、故障演练、恢复验证 & 容量分析与演练报告 \\ \hline
+每年 & 架构复审、设备生命周期评估 & 网络升级建议 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsubsection{变更管理}
+
+网络变更应遵循申请、评估、实施、验证、回退和归档流程。尤其是 ACL、NAT、VPN 和路由相关变更，一条错误规则可能导致大范围中断，因此必须在低峰期执行，并提前准备回退命令。
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{变更申请}：说明变更目的、涉及设备、涉及业务和预期影响；
+    \item \textbf{风险评估}：判断是否影响财务、OA、邮件、互联网出口和分公司访问；
+    \item \textbf{实施准备}：备份当前配置，准备变更命令和回退命令；
+    \item \textbf{窗口实施}：在业务低峰期执行，实时观察接口、路由和业务状态；
+    \item \textbf{结果验证}：按测试用例验证允许流量和禁止流量；
+    \item \textbf{归档记录}：保存变更前后配置、测试结果和负责人信息。
+\end{enumerate}
+
+\subsection{网络安全运维建议}
+
+安全设计不仅体现在初始配置，也依赖持续运维。本方案建议在后续真实部署中补充以下措施：
+
+\begin{itemize}
+    \item 设备管理账号采用强密码，并定期更换；
+    \item 关闭未使用端口，将空闲交换机端口划入隔离 VLAN；
+    \item 管理平面限制来源地址，只允许管理员网段登录设备；
+    \item 启用日志记录，将关键设备日志发送到集中日志服务器；
+    \item 对远程 VPN 用户实行账号实名制，离职人员及时禁用账号；
+    \item 对服务器区进行定期漏洞扫描，及时修补 Web、FTP、Email 服务漏洞；
+    \item 定期检查 ACL 命中计数，发现异常访问趋势及时分析；
+    \item 对重要配置文件进行离线备份，避免单点存储损坏。
+\end{itemize}
+
 % ==================== 六、设备选型与工程预算 ====================
 \section{设备选型与工程预算}
 
@@ -1054,6 +1528,238 @@ RIPv2 路由学习              & show ip route        & 路由表完整        
 \end{table}
 
 所有测试项目均通过，验证了本方案设计的正确性和可行性。
+
+\subsection{详细验收测试方案}
+
+为保证测试过程可重复、结果可追溯，本方案在功能测试截图之外，进一步设计了详细验收测试方案。验收测试不仅检查“是否能 ping 通”，还需要确认地址获取、路由学习、服务端口、访问控制、VPN 隧道和异常拒绝行为均符合设计要求。
+
+\subsubsection{测试环境}
+
+测试平台为 Cisco Packet Tracer 8.x，使用的主要设备包括 Cisco 2811 路由器、Cisco 2560-24PS 核心交换机、Cisco 2960 接入交换机、Cisco 1960-24TT 分公司交换机、Server-PT 服务器和 PC-PT 终端。测试拓扑文件为 \texttt{计算机网络课程设计\_题目二\_拓扑图\_V2.pkt}。
+
+测试终端分布如下：
+
+\begin{itemize}
+    \item 总部市场部 PC：用于验证普通办公终端访问互联网、访问服务器区以及被禁止访问财务部；
+    \item 总部财务部 PC：用于验证高安全部门能够访问必要业务服务；
+    \item 总部研发部 PC：用于验证跨 VLAN 访问服务器与分公司互通；
+    \item 分公司 PC：用于验证站点间 VPN 和 RIPv2 跨站点路由；
+    \item 外部测试 PC：用于验证互联网访问企业门户、邮件服务和远程 VPN 接入；
+    \item 服务器区主机：用于验证 Web、FTP、Email、DNS、DHCP 等业务服务。
+\end{itemize}
+
+\subsubsection{验收标准}
+
+本项目验收标准分为功能性标准、安全性标准和可维护性标准三类：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{功能性标准}：各部门终端能够获取正确地址，同 VLAN、跨 VLAN、总部与分公司、内网与互联网之间的必要通信均可达；
+    \item \textbf{安全性标准}：被禁止的访问必须失败，例如普通部门访问财务部、外部访问 FTP、外部直接访问 OA；
+    \item \textbf{可维护性标准}：关键设备命名清晰，路由表可读，ACL 规则有明确用途，测试结果能够与配置对应。
+\end{enumerate}
+
+\begin{longtable}{|p{1.3cm}|p{3.1cm}|p{3.5cm}|p{3.6cm}|p{2.5cm}|}
+\caption{详细验收测试用例}
+\label{tab:acceptance-detail}\\
+\hline
+\textbf{编号} & \textbf{测试项目} & \textbf{测试步骤} & \textbf{预期结果} & \textbf{结论} \\ \hline
+\endfirsthead
+\hline
+\textbf{编号} & \textbf{测试项目} & \textbf{测试步骤} & \textbf{预期结果} & \textbf{结论} \\ \hline
+\endhead
+T01 & 市场部 DHCP 获取地址 & 市场部 PC 设置为 DHCP，查看 IP 配置 & 获取 192.168.10.0/24 地址、网关 192.168.10.1、DNS 192.168.80.50 & 通过 \\ \hline
+T02 & 财务部 DHCP 获取地址 & 财务部 PC 设置为 DHCP，查看 IP 配置 & 获取 192.168.20.0/24 地址、网关 192.168.20.1 & 通过 \\ \hline
+T03 & 同 VLAN 通信 & 市场部 PC ping 同 VLAN 另一台 PC & ICMP 回复正常，延迟稳定 & 通过 \\ \hline
+T04 & 跨 VLAN 访问服务器 & 市场部 PC ping Web Server & 可以到达 192.168.80.10 & 通过 \\ \hline
+T05 & 财务访问 OA & 财务部 PC 访问 OA/Web 服务 & 可以打开业务页面 & 通过 \\ \hline
+T06 & 市场访问财务受限 & 市场部 PC ping 财务部 PC & 请求失败或被拒绝 & 通过 \\ \hline
+T07 & 客服访问财务受限 & 客服部 PC ping 财务部 PC & 请求失败或被拒绝 & 通过 \\ \hline
+T08 & DNS 域名解析 & PC 访问 \texttt{www.company.com} & 解析到 Web Server 地址并打开页面 & 通过 \\ \hline
+T09 & 内网访问互联网 & 总部 PC ping 外部服务器并访问 HTTP & 通信正常，NAT 生效 & 通过 \\ \hline
+T10 & NAT 转换记录 & 在 Core-Router 查看 NAT 表 & 出现 inside local 到 inside global 转换记录 & 通过 \\ \hline
+T11 & 内部 FTP 访问 & 内部 PC 登录 FTP 服务器 & 登录成功，可进行基本文件操作 & 通过 \\ \hline
+T12 & 外部 FTP 访问限制 & 外部 PC 尝试访问 FTP 服务器 & 连接失败或被 ACL 拒绝 & 通过 \\ \hline
+T13 & Email 发送 & 内部用户向另一用户发送邮件 & 收件方可收到邮件 & 通过 \\ \hline
+T14 & 外部邮件通信 & 外部用户与内部用户互发邮件 & SMTP/POP3 工作正常 & 通过 \\ \hline
+T15 & 分公司到总部路由 & Branch1 PC ping 总部 Web Server & 可达，路径经 Core-Router & 通过 \\ \hline
+T16 & 总部到分公司路由 & 总部 PC ping Branch1 PC & 可达，RIPv2 路由正确 & 通过 \\ \hline
+T17 & 站点 VPN 建立 & 触发总部与分公司通信后查看 VPN 状态 & IPSec 隧道建立，安全关联存在 & 通过 \\ \hline
+T18 & 远程 VPN 拨号 & 外部 PC 使用 VPN 客户端连接 & 拨号成功，获得 VPN 地址池地址 & 通过 \\ \hline
+T19 & 远程访问内部服务器 & VPN 客户端 ping Web/OA 服务器 & 隧道内通信正常 & 通过 \\ \hline
+T20 & RIPv2 路由学习 & 查看各路由器 \texttt{show ip route} & 出现总部、分公司和服务器区远端路由 & 通过 \\ \hline
+T21 & Trunk VLAN 承载 & 查看核心交换机 Trunk 状态 & VLAN 10--80 可通过上行链路 & 通过 \\ \hline
+T22 & STP 基础状态 & 查看交换机 STP 状态 & 无二层环路，端口状态稳定 & 通过 \\ \hline
+T23 & ACL 规则顺序 & 查看 ACL 配置与命中行为 & 拒绝规则位于 permit 之前且生效 & 通过 \\ \hline
+T24 & 服务器区访问控制 & 从非授权源访问受限端口 & 非授权访问被拒绝，授权访问正常 & 通过 \\ \hline
+\end{longtable}
+
+\subsection{测试数据记录与结果分析}
+
+在 Packet Tracer 中，连通性测试主要通过 ICMP、HTTP、FTP、Email 客户端和 VPN 客户端完成。每个测试项都应记录测试源、测试目的、协议类型、预期结果和实际结果。对于失败测试，不能简单记录“失败”，而应分析失败是否符合安全策略。如果测试项本身是验证“禁止访问”，则失败连接反而表示策略正确。
+
+\begin{table}[H]
+\centering
+\caption{典型测试数据记录}
+\label{tab:test-data-record}
+\begin{tabular}{|p{3cm}|p{3cm}|p{3cm}|p{3cm}|p{2cm}|}
+\hline
+\textbf{源节点} & \textbf{目的节点} & \textbf{协议} & \textbf{预期现象} & \textbf{结果} \\ \hline
+Market-PC & Finance-PC & ICMP & 不可达 & 通过 \\ \hline
+Market-PC & Web Server & HTTP & 页面打开 & 通过 \\ \hline
+Branch1-PC & Web Server & ICMP/HTTP & 可达 & 通过 \\ \hline
+External-PC & FTP Server & FTP & 被拒绝 & 通过 \\ \hline
+VPN-PC & OA/Web Server & ICMP/HTTP & VPN 后可达 & 通过 \\ \hline
+Inside-PC & Internet Server & HTTP & 可访问外网 & 通过 \\ \hline
+\end{tabular}
+\end{table}
+
+从测试结果看，网络的基础连通性和安全隔离策略均达到预期。允许访问的业务路径包括部门访问服务器区、总部与分公司互访、内网访问互联网、VPN 用户访问内部服务器等；禁止访问的业务路径包括普通部门访问财务部、外部网络访问 FTP 和外部直接访问内部 OA 等。
+
+\subsection{性能与容量验证}
+
+Packet Tracer 无法完全模拟真实企业网络中的高并发流量，但可以从地址容量、端口容量、链路层级和路由规模四个方面进行合理性验证。
+
+\subsubsection{地址容量}
+
+总部每个部门采用 /24 子网，单个 VLAN 可容纳 254 个可用主机地址。对于大多数部门，该容量可以满足当前终端规模；研发部如超过 254 台终端，可通过新增研发二级 VLAN 进行扩展。分公司各使用 172.16.x.0/24 网段，满足每个分公司数十到两百台终端的规模需求。
+
+\subsubsection{端口容量}
+
+课程设计拓扑中为了便于展示，使用少量 PC 代表各部门终端。在真实部署中，1000 台终端需要约 21 台 48 口接入交换机，另需预留服务器、打印机、无线 AP、会议终端等端口。因此工程预算中需要考虑接入交换机扩容和弱电间布线空间。
+
+\subsubsection{路由规模}
+
+当前路由表包含总部 8 个 VLAN 网段、3 个分公司网段、若干点到点链路网段和公网互联地址。该规模远低于 RIPv2 可承载的复杂度，路由收敛与维护压力较小。由于采用 Hub-and-Spoke 架构，新增分公司时主要增加一条点到点链路和一个 172.16.x.0/24 网段，对原有拓扑影响较小。
+
+\begin{table}[H]
+\centering
+\caption{容量验证结论}
+\label{tab:capacity-verify}
+\begin{tabular}{|p{3.5cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{验证项} & \textbf{当前设计} & \textbf{结论} \\ \hline
+总部地址容量 & 8 个 /24 VLAN 网段 & 满足约 1000 台终端，研发部需预留扩展 \\ \hline
+分公司地址容量 & 每个分公司 1 个 /24 网段 & 满足中小型分支机构需求 \\ \hline
+路由规模 & 十余条主要业务网段 & RIPv2 可稳定承载 \\ \hline
+服务器区容量 & VLAN 80 预留 254 个地址 & 满足当前 3 台核心服务器及扩展 \\ \hline
+接入端口容量 & 实际工程需约 21 台 48 口交换机 & 预算中应预留扩容成本 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{安全验证}
+
+安全验证的重点是确认 ACL 和 VPN 策略符合“允许必要业务、拒绝非授权访问”的原则。测试过程中不仅要验证允许项，也要验证禁止项。仅验证能够访问是不完整的，因为错误的 ACL 可能会导致所有流量都被放行。
+
+\begin{longtable}{|p{3cm}|p{3.5cm}|p{3.5cm}|p{4cm}|}
+\caption{安全策略验证表}
+\label{tab:security-verify}\\
+\hline
+\textbf{策略} & \textbf{测试源} & \textbf{测试目的} & \textbf{验证结论} \\ \hline
+\endfirsthead
+\hline
+\textbf{策略} & \textbf{测试源} & \textbf{测试目的} & \textbf{验证结论} \\ \hline
+\endhead
+财务部隔离 & VLAN 10 市场部 & VLAN 20 财务部 & ACL 阻断，符合最小权限原则 \\ \hline
+财务部隔离 & VLAN 70 客服部 & VLAN 20 财务部 & ACL 阻断，策略生效 \\ \hline
+服务器访问 & VLAN 10--70 & Web Server & HTTP 访问允许，业务可用 \\ \hline
+FTP 内部限用 & 内部 PC & FTP Server & 登录成功，符合内部员工使用要求 \\ \hline
+FTP 外部限制 & External-PC & FTP Server & 访问失败，避免文件服务暴露公网 \\ \hline
+远程办公保护 & External-PC & OA/Web Server & 未 VPN 时不可直接访问，VPN 后可访问 \\ \hline
+站点间加密 & Branch PC & HQ Server & 通过 IPSec 隧道通信，跨公网流量受保护 \\ \hline
+NAT 隐藏内网 & Inside-PC & Internet Server & 外部只看到转换后地址，内网地址不暴露 \\ \hline
+\end{longtable}
+
+安全验证结果表明，网络没有因为追求互通而放弃隔离。普通办公部门不能直接访问高敏感部门，外部网络不能直接访问 FTP 和 OA，分公司和远程办公流量必须经过 VPN。该结果符合企业网络安全的基本要求。
+
+\subsection{风险评估}
+
+任何网络方案都存在风险，课程设计也应说明当前方案的边界。风险评估有助于明确哪些问题已经通过配置解决，哪些问题需要在真实部署中通过设备冗余、管理制度或安全产品进一步改进。
+
+\begin{longtable}{|p{3cm}|p{2cm}|p{5cm}|p{4cm}|}
+\caption{项目风险评估表}
+\label{tab:risk-assessment}\\
+\hline
+\textbf{风险项} & \textbf{等级} & \textbf{影响} & \textbf{缓解措施} \\ \hline
+\endfirsthead
+\hline
+\textbf{风险项} & \textbf{等级} & \textbf{影响} & \textbf{缓解措施} \\ \hline
+\endhead
+核心路由器单点故障 & 高 & 总部、分公司与互联网互联中断 & 后续部署双核心路由器和 HSRP/VRRP \\ \hline
+核心交换机故障 & 高 & 总部 VLAN 与服务器区通信中断 & 部署双核心交换机和链路聚合 \\ \hline
+ISP 出口中断 & 中高 & 内网无法访问互联网，远程 VPN 受影响 & 引入双 ISP 出口和备用链路 \\ \hline
+ACL 配置错误 & 中高 & 可能误放行或误阻断业务流量 & 变更前备份，变更后按用例测试 \\ \hline
+VPN 密钥泄露 & 中高 & 分公司或远程接入安全受威胁 & 定期更换密钥，真实环境使用证书认证 \\ \hline
+DHCP 地址耗尽 & 中 & 终端无法自动获取地址 & 监控地址池使用率，合理扩展网段 \\ \hline
+服务器漏洞 & 中高 & Web、FTP、Email 服务被攻击 & 定期补丁、日志审计、DMZ 隔离 \\ \hline
+广播风暴 & 中 & 二层网络拥塞或瘫痪 & 启用 STP，限制未知设备接入 \\ \hline
+误接入设备 & 中 & 非授权终端进入企业内网 & 空闲端口关闭，启用端口安全 \\ \hline
+配置丢失 & 中 & 故障后恢复困难 & 定期备份 running-config 与拓扑文件 \\ \hline
+\end{longtable}
+
+\subsection{应急恢复预案}
+
+网络故障发生时，处理目标是先恢复关键业务，再分析根因。企业关键业务包括 OA、邮件、服务器区访问、互联网出口、总部与分公司互联和远程 VPN 接入。应急恢复预案应包含故障识别、影响范围判断、临时恢复、根因分析和复盘改进。
+
+\subsubsection{核心设备故障}
+
+若 Core-Router 故障，首先确认设备电源、接口状态和配置是否正常。如果是配置误操作导致，可通过最近一次备份恢复；如果是设备硬件故障，真实环境中应切换到备用核心路由器。Packet Tracer 仿真中可通过重新加载保存的拓扑文件恢复实验状态。
+
+\subsubsection{出口访问故障}
+
+若内网无法访问互联网，应按顺序检查终端网关、核心路由默认路由、NAT inside/outside 标记、NAT ACL、ISP 侧接口和外部服务器状态。若 NAT 转换表没有记录，优先检查 NAT ACL 是否匹配内网源地址；若有转换记录但外部不通，优先检查默认路由和 ISP 返回路径。
+
+\subsubsection{VPN 故障}
+
+VPN 故障通常来自对等体地址错误、预共享密钥不一致、IKE 策略不匹配、感兴趣流量 ACL 不镜像或接口 crypto map 未应用。排查时应先通过普通 ping 确认两端公网接口可达，再查看 IKE Phase 1 状态，最后查看 IPSec SA 是否产生加密和解密计数。
+
+\begin{table}[H]
+\centering
+\caption{应急处理优先级}
+\label{tab:emergency-priority}
+\begin{tabular}{|p{3cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{优先级} & \textbf{业务/故障} & \textbf{处理目标} \\ \hline
+P1 & 核心路由器、核心交换机、服务器区整体中断 & 立即恢复核心连通性 \\ \hline
+P2 & 互联网出口、总部与分公司 VPN 中断 & 恢复跨域业务访问 \\ \hline
+P3 & 单部门 VLAN 故障、DHCP 异常 & 恢复部门办公能力 \\ \hline
+P4 & 单个服务异常、单台终端异常 & 局部处理并记录 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{交付内容清单}
+
+课程设计最终交付不应只有 PDF 报告，还应包含能够复现实验结果的拓扑文件、截图和配置说明。本项目交付内容如下：
+
+\begin{enumerate}[label=(\arabic*), leftmargin=2em]
+    \item \textbf{实验报告 PDF}：说明项目背景、需求分析、设计方案、配置命令、测试结果和总结；
+    \item \textbf{LaTeX 源文件}：保存报告源文档，便于后续修改和重新编译；
+    \item \textbf{Packet Tracer 拓扑文件}：保存完整网络拓扑和设备配置；
+    \item \textbf{测试截图}：保存 VLAN、ACL、DHCP、NAT、FTP、Email、VPN 等功能验证截图；
+    \item \textbf{配置清单}：包含核心路由器、总部路由器、核心交换机、分公司路由器和服务器配置；
+    \item \textbf{测试用例表}：记录每项测试的源、目的、协议、预期结果和实际结果。
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{项目交付文件清单}
+\label{tab:delivery}
+\begin{tabular}{|p{5cm}|p{4cm}|p{5cm}|}
+\hline
+\textbf{文件/材料} & \textbf{格式} & \textbf{说明} \\ \hline
+计算机网络课程设计\_题目二\_报告\_V2.pdf & PDF & 最终报告文档 \\ \hline
+计算机网络课程设计\_题目二\_报告\_V2.tex & TEX & 报告源文件 \\ \hline
+计算机网络课程设计\_题目二\_拓扑图\_V2.pkt & PKT & Packet Tracer 拓扑文件 \\ \hline
+assets/v2/*.png & PNG & 功能测试截图 \\ \hline
+设备配置命令 & 报告内嵌 & 关键设备配置说明 \\ \hline
+验收测试记录 & 表格 & 测试项、步骤、预期和结果 \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Packet Tracer 仿真的局限性}
+
+Packet Tracer 非常适合课程设计和网络基础实验，但它并不能完全等同于真实生产网络。首先，Packet Tracer 对部分 Cisco IOS 命令支持有限，一些真实设备上的高级特性可能无法完整模拟。其次，仿真环境中的链路延迟、丢包、吞吐量和设备性能并不等同于真实硬件。再次，安全攻击、日志审计、漏洞扫描和大规模并发访问也无法完全在 Packet Tracer 中重现。
+
+因此，本报告中的设计结论适用于课程设计验证和中小企业网络规划原型。若进入真实部署阶段，还需要结合实际设备型号、运营商链路、楼宇布线、服务器系统、安全合规要求和预算进行二次深化设计。尤其是防火墙、DMZ、双核心冗余、日志审计和备份恢复，应在生产环境中重点补充。
 
 % ==================== 八、总结与展望 ====================
 \section{总结与展望}

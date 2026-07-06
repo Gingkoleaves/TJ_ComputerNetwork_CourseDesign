@@ -1,73 +1,119 @@
-\contentsline {section}{\numberline {1}项目概述}{4}{section.1}%
-\contentsline {subsection}{\numberline {1.1}项目背景}{4}{subsection.1.1}%
-\contentsline {subsection}{\numberline {1.2}项目需求}{4}{subsection.1.2}%
-\contentsline {section}{\numberline {2}可行性分析报告}{5}{section.2}%
-\contentsline {subsection}{\numberline {2.1}社会可行性分析}{5}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}技术可行性分析}{5}{subsection.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.1}VLAN（虚拟局域网）}{5}{subsubsection.2.2.1}%
-\contentsline {subsubsection}{\numberline {2.2.2}VPN（虚拟专用网络）}{5}{subsubsection.2.2.2}%
-\contentsline {subsubsection}{\numberline {2.2.3}RIPv2（路由信息协议第二版）}{5}{subsubsection.2.2.3}%
-\contentsline {subsubsection}{\numberline {2.2.4}ACL（访问控制列表）}{6}{subsubsection.2.2.4}%
-\contentsline {subsubsection}{\numberline {2.2.5}NAT（网络地址转换）}{6}{subsubsection.2.2.5}%
-\contentsline {subsubsection}{\numberline {2.2.6}DHCP（动态主机配置协议）}{6}{subsubsection.2.2.6}%
-\contentsline {subsubsection}{\numberline {2.2.7}STP（生成树协议）}{6}{subsubsection.2.2.7}%
-\contentsline {subsection}{\numberline {2.3}经济可行性分析}{6}{subsection.2.3}%
-\contentsline {section}{\numberline {3}需求分析}{7}{section.3}%
-\contentsline {subsection}{\numberline {3.1}网络需求}{7}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}VLAN 规划}{8}{subsection.3.2}%
-\contentsline {subsection}{\numberline {3.3}服务器规划}{8}{subsection.3.3}%
-\contentsline {subsection}{\numberline {3.4}IP 地址规划}{9}{subsection.3.4}%
-\contentsline {section}{\numberline {4}网络结构设计}{9}{section.4}%
-\contentsline {subsection}{\numberline {4.1}网络拓扑结构}{9}{subsection.4.1}%
-\contentsline {subsubsection}{\numberline {4.1.1}第一层：ISP 互联层}{9}{subsubsection.4.1.1}%
-\contentsline {subsubsection}{\numberline {4.1.2}第二层：核心路由层}{9}{subsubsection.4.1.2}%
-\contentsline {subsubsection}{\numberline {4.1.3}第三层：总部分发层}{10}{subsubsection.4.1.3}%
-\contentsline {subsubsection}{\numberline {4.1.4}第四层：接入层}{10}{subsubsection.4.1.4}%
-\contentsline {subsubsection}{\numberline {4.1.5}第五层：分支机构}{10}{subsubsection.4.1.5}%
-\contentsline {subsubsection}{\numberline {4.1.6}拓扑结构图}{10}{subsubsection.4.1.6}%
-\contentsline {subsection}{\numberline {4.2}VPN 结构设计}{11}{subsection.4.2}%
-\contentsline {subsubsection}{\numberline {4.2.1}站点到站点 IPSec VPN}{11}{subsubsection.4.2.1}%
-\contentsline {subsubsection}{\numberline {4.2.2}远程访问 VPN}{12}{subsubsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.3}安全设计}{12}{subsection.4.3}%
-\contentsline {section}{\numberline {5}系统配置与实施}{12}{section.5}%
-\contentsline {subsection}{\numberline {5.1}核心路由器配置（Core-Router）}{13}{subsection.5.1}%
-\contentsline {subsection}{\numberline {5.2}RIPv2 动态路由配置}{13}{subsection.5.2}%
-\contentsline {subsection}{\numberline {5.3}总部核心交换机配置（HQ-Core-SW）}{15}{subsection.5.3}%
-\contentsline {subsection}{\numberline {5.4}DHCP 配置}{17}{subsection.5.4}%
-\contentsline {subsection}{\numberline {5.5}边界路由器与 NAT 配置}{17}{subsection.5.5}%
-\contentsline {subsection}{\numberline {5.6}ACL 访问控制配置}{18}{subsection.5.6}%
-\contentsline {subsection}{\numberline {5.7}IPSec VPN 配置}{19}{subsection.5.7}%
-\contentsline {subsubsection}{\numberline {5.7.1}站点到站点 VPN 配置（Core-Router 侧）}{19}{subsubsection.5.7.1}%
-\contentsline {subsubsection}{\numberline {5.7.2}远程访问 VPN 配置（ISP-Router/VPN-Server）}{20}{subsubsection.5.7.2}%
-\contentsline {subsection}{\numberline {5.8}服务器配置}{20}{subsection.5.8}%
-\contentsline {subsubsection}{\numberline {5.8.1}WEB 服务器（192.168.80.10）}{20}{subsubsection.5.8.1}%
-\contentsline {subsubsection}{\numberline {5.8.2}FTP \& Email 服务器（192.168.80.20/30）}{21}{subsubsection.5.8.2}%
-\contentsline {subsubsection}{\numberline {5.8.3}DNS \& DHCP 服务器（192.168.80.50）}{21}{subsubsection.5.8.3}%
-\contentsline {subsection}{\numberline {5.9}分公司路由器配置（Branch-Router）}{21}{subsection.5.9}%
-\contentsline {subsection}{\numberline {5.10}分公司交换机配置（Branch-SW）}{22}{subsection.5.10}%
-\contentsline {section}{\numberline {6}设备选型与工程预算}{23}{section.6}%
-\contentsline {subsection}{\numberline {6.1}核心网络设备清单}{23}{subsection.6.1}%
-\contentsline {subsection}{\numberline {6.2}预算测算依据}{24}{subsection.6.2}%
-\contentsline {subsubsection}{\numberline {6.2.1}接入端口测算}{24}{subsubsection.6.2.1}%
-\contentsline {subsubsection}{\numberline {6.2.2}核心带宽测算}{24}{subsubsection.6.2.2}%
-\contentsline {subsubsection}{\numberline {6.2.3}项目总预算}{24}{subsubsection.6.2.3}%
-\contentsline {section}{\numberline {7}构建和测试}{25}{section.7}%
-\contentsline {subsection}{\numberline {7.1}全局拓扑图}{25}{subsection.7.1}%
-\contentsline {subsection}{\numberline {7.2}内网 VLAN 通信测试}{25}{subsection.7.2}%
-\contentsline {subsubsection}{\numberline {7.2.1}同一 VLAN 内通信}{25}{subsubsection.7.2.1}%
-\contentsline {subsubsection}{\numberline {7.2.2}同公司不同 VLAN 间通信}{25}{subsubsection.7.2.2}%
-\contentsline {subsubsection}{\numberline {7.2.3}不同公司间通信}{26}{subsubsection.7.2.3}%
-\contentsline {subsection}{\numberline {7.3}ACL 访问控制测试}{26}{subsection.7.3}%
-\contentsline {subsection}{\numberline {7.4}DHCP 自动地址分配测试}{27}{subsection.7.4}%
-\contentsline {subsection}{\numberline {7.5}互联网访问测试}{28}{subsection.7.5}%
-\contentsline {subsection}{\numberline {7.6}FTP 服务测试}{29}{subsection.7.6}%
-\contentsline {subsection}{\numberline {7.7}Email 邮件服务测试}{29}{subsection.7.7}%
-\contentsline {subsection}{\numberline {7.8}VPN 功能测试}{30}{subsection.7.8}%
-\contentsline {subsubsection}{\numberline {7.8.1}内网 Ping VPN 服务器}{30}{subsubsection.7.8.1}%
-\contentsline {subsubsection}{\numberline {7.8.2}VPN 连接建立}{30}{subsubsection.7.8.2}%
-\contentsline {subsubsection}{\numberline {7.8.3}VPN 连接后通信测试}{31}{subsubsection.7.8.3}%
-\contentsline {subsection}{\numberline {7.9}测试结果汇总}{32}{subsection.7.9}%
-\contentsline {section}{\numberline {8}总结与展望}{33}{section.8}%
-\contentsline {subsection}{\numberline {8.1}项目总结}{33}{subsection.8.1}%
-\contentsline {subsection}{\numberline {8.2}方案特色}{33}{subsection.8.2}%
-\contentsline {subsection}{\numberline {8.3}未来展望}{34}{subsection.8.3}%
+\contentsline {section}{\numberline {1}项目概述}{5}{section.1}%
+\contentsline {subsection}{\numberline {1.1}项目背景}{5}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}项目需求}{5}{subsection.1.2}%
+\contentsline {section}{\numberline {2}可行性分析报告}{6}{section.2}%
+\contentsline {subsection}{\numberline {2.1}社会可行性分析}{6}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}技术可行性分析}{6}{subsection.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.1}VLAN（虚拟局域网）}{6}{subsubsection.2.2.1}%
+\contentsline {subsubsection}{\numberline {2.2.2}VPN（虚拟专用网络）}{6}{subsubsection.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.2.3}RIPv2（路由信息协议第二版）}{6}{subsubsection.2.2.3}%
+\contentsline {subsubsection}{\numberline {2.2.4}ACL（访问控制列表）}{7}{subsubsection.2.2.4}%
+\contentsline {subsubsection}{\numberline {2.2.5}NAT（网络地址转换）}{7}{subsubsection.2.2.5}%
+\contentsline {subsubsection}{\numberline {2.2.6}DHCP（动态主机配置协议）}{7}{subsubsection.2.2.6}%
+\contentsline {subsubsection}{\numberline {2.2.7}STP（生成树协议）}{7}{subsubsection.2.2.7}%
+\contentsline {subsection}{\numberline {2.3}经济可行性分析}{7}{subsection.2.3}%
+\contentsline {section}{\numberline {3}需求分析}{8}{section.3}%
+\contentsline {subsection}{\numberline {3.1}网络需求}{8}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}VLAN 规划}{9}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}服务器规划}{9}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}IP 地址规划}{10}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}业务流量与访问关系分析}{10}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}地址容量与可扩展性分析}{11}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}部门安全等级划分}{12}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}逻辑拓扑与物理拓扑对应关系}{13}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}命名规范与管理规范}{13}{subsection.3.9}%
+\contentsline {section}{\numberline {4}网络结构设计}{14}{section.4}%
+\contentsline {subsection}{\numberline {4.1}网络拓扑结构}{14}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {4.1.1}第一层：ISP 互联层}{14}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {4.1.2}第二层：核心路由层}{14}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {4.1.3}第三层：总部分发层}{15}{subsubsection.4.1.3}%
+\contentsline {subsubsection}{\numberline {4.1.4}第四层：接入层}{15}{subsubsection.4.1.4}%
+\contentsline {subsubsection}{\numberline {4.1.5}第五层：分支机构}{15}{subsubsection.4.1.5}%
+\contentsline {subsubsection}{\numberline {4.1.6}拓扑结构图}{15}{subsubsection.4.1.6}%
+\contentsline {subsection}{\numberline {4.2}VPN 结构设计}{16}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}站点到站点 IPSec VPN}{16}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}远程访问 VPN}{17}{subsubsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.3}安全设计}{17}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}路由设计深化}{17}{subsection.4.4}%
+\contentsline {subsubsection}{\numberline {4.4.1}RIPv2 与静态路由对比}{18}{subsubsection.4.4.1}%
+\contentsline {subsubsection}{\numberline {4.4.2}路由收敛过程}{18}{subsubsection.4.4.2}%
+\contentsline {subsubsection}{\numberline {4.4.3}默认路由传播}{18}{subsubsection.4.4.3}%
+\contentsline {subsection}{\numberline {4.5}VPN 安全机制深化}{19}{subsection.4.5}%
+\contentsline {subsubsection}{\numberline {4.5.1}IPSec 工作阶段}{19}{subsubsection.4.5.1}%
+\contentsline {subsubsection}{\numberline {4.5.2}感兴趣流量设计}{20}{subsubsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.6}ACL 策略设计深化}{20}{subsection.4.6}%
+\contentsline {subsubsection}{\numberline {4.6.1}规则顺序}{20}{subsubsection.4.6.1}%
+\contentsline {subsubsection}{\numberline {4.6.2}应用方向}{20}{subsubsection.4.6.2}%
+\contentsline {subsection}{\numberline {4.7}服务器区与 DMZ 设计讨论}{21}{subsection.4.7}%
+\contentsline {subsubsection}{\numberline {4.7.1}当前服务器区设计}{21}{subsubsection.4.7.1}%
+\contentsline {subsubsection}{\numberline {4.7.2}可升级 DMZ 方案}{21}{subsubsection.4.7.2}%
+\contentsline {subsection}{\numberline {4.8}可靠性设计}{22}{subsection.4.8}%
+\contentsline {subsubsection}{\numberline {4.8.1}设备可靠性}{22}{subsubsection.4.8.1}%
+\contentsline {subsubsection}{\numberline {4.8.2}链路可靠性}{22}{subsubsection.4.8.2}%
+\contentsline {subsubsection}{\numberline {4.8.3}协议可靠性}{22}{subsubsection.4.8.3}%
+\contentsline {section}{\numberline {5}系统配置与实施}{23}{section.5}%
+\contentsline {subsection}{\numberline {5.1}核心路由器配置（Core-Router）}{23}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}RIPv2 动态路由配置}{24}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}总部核心交换机配置（HQ-Core-SW）}{25}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}DHCP 配置}{27}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}边界路由器与 NAT 配置}{28}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}ACL 访问控制配置}{28}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}IPSec VPN 配置}{29}{subsection.5.7}%
+\contentsline {subsubsection}{\numberline {5.7.1}站点到站点 VPN 配置（Core-Router 侧）}{29}{subsubsection.5.7.1}%
+\contentsline {subsubsection}{\numberline {5.7.2}远程访问 VPN 配置（ISP-Router/VPN-Server）}{30}{subsubsection.5.7.2}%
+\contentsline {subsection}{\numberline {5.8}服务器配置}{31}{subsection.5.8}%
+\contentsline {subsubsection}{\numberline {5.8.1}WEB 服务器（192.168.80.10）}{31}{subsubsection.5.8.1}%
+\contentsline {subsubsection}{\numberline {5.8.2}FTP \& Email 服务器（192.168.80.20/30）}{31}{subsubsection.5.8.2}%
+\contentsline {subsubsection}{\numberline {5.8.3}DNS \& DHCP 服务器（192.168.80.50）}{31}{subsubsection.5.8.3}%
+\contentsline {subsection}{\numberline {5.9}分公司路由器配置（Branch-Router）}{32}{subsection.5.9}%
+\contentsline {subsection}{\numberline {5.10}分公司交换机配置（Branch-SW）}{33}{subsection.5.10}%
+\contentsline {subsection}{\numberline {5.11}实施步骤与上线流程}{33}{subsection.5.11}%
+\contentsline {subsection}{\numberline {5.12}配置备份与版本管理}{35}{subsection.5.12}%
+\contentsline {subsection}{\numberline {5.13}常见故障与排查方法}{36}{subsection.5.13}%
+\contentsline {subsubsection}{\numberline {5.13.1}连通性排查顺序}{36}{subsubsection.5.13.1}%
+\contentsline {subsection}{\numberline {5.14}运行维护方案}{37}{subsection.5.14}%
+\contentsline {subsubsection}{\numberline {5.14.1}日常巡检内容}{37}{subsubsection.5.14.1}%
+\contentsline {subsubsection}{\numberline {5.14.2}变更管理}{38}{subsubsection.5.14.2}%
+\contentsline {subsection}{\numberline {5.15}网络安全运维建议}{38}{subsection.5.15}%
+\contentsline {section}{\numberline {6}设备选型与工程预算}{39}{section.6}%
+\contentsline {subsection}{\numberline {6.1}核心网络设备清单}{39}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}预算测算依据}{39}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}接入端口测算}{39}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}核心带宽测算}{40}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3}项目总预算}{40}{subsubsection.6.2.3}%
+\contentsline {section}{\numberline {7}构建和测试}{40}{section.7}%
+\contentsline {subsection}{\numberline {7.1}全局拓扑图}{40}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}内网 VLAN 通信测试}{41}{subsection.7.2}%
+\contentsline {subsubsection}{\numberline {7.2.1}同一 VLAN 内通信}{41}{subsubsection.7.2.1}%
+\contentsline {subsubsection}{\numberline {7.2.2}同公司不同 VLAN 间通信}{41}{subsubsection.7.2.2}%
+\contentsline {subsubsection}{\numberline {7.2.3}不同公司间通信}{42}{subsubsection.7.2.3}%
+\contentsline {subsection}{\numberline {7.3}ACL 访问控制测试}{42}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}DHCP 自动地址分配测试}{43}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}互联网访问测试}{44}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}FTP 服务测试}{45}{subsection.7.6}%
+\contentsline {subsection}{\numberline {7.7}Email 邮件服务测试}{45}{subsection.7.7}%
+\contentsline {subsection}{\numberline {7.8}VPN 功能测试}{46}{subsection.7.8}%
+\contentsline {subsubsection}{\numberline {7.8.1}内网 Ping VPN 服务器}{46}{subsubsection.7.8.1}%
+\contentsline {subsubsection}{\numberline {7.8.2}VPN 连接建立}{46}{subsubsection.7.8.2}%
+\contentsline {subsubsection}{\numberline {7.8.3}VPN 连接后通信测试}{47}{subsubsection.7.8.3}%
+\contentsline {subsection}{\numberline {7.9}测试结果汇总}{48}{subsection.7.9}%
+\contentsline {subsection}{\numberline {7.10}详细验收测试方案}{49}{subsection.7.10}%
+\contentsline {subsubsection}{\numberline {7.10.1}测试环境}{49}{subsubsection.7.10.1}%
+\contentsline {subsubsection}{\numberline {7.10.2}验收标准}{49}{subsubsection.7.10.2}%
+\contentsline {subsection}{\numberline {7.11}测试数据记录与结果分析}{51}{subsection.7.11}%
+\contentsline {subsection}{\numberline {7.12}性能与容量验证}{52}{subsection.7.12}%
+\contentsline {subsubsection}{\numberline {7.12.1}地址容量}{52}{subsubsection.7.12.1}%
+\contentsline {subsubsection}{\numberline {7.12.2}端口容量}{52}{subsubsection.7.12.2}%
+\contentsline {subsubsection}{\numberline {7.12.3}路由规模}{52}{subsubsection.7.12.3}%
+\contentsline {subsection}{\numberline {7.13}安全验证}{53}{subsection.7.13}%
+\contentsline {subsection}{\numberline {7.14}风险评估}{54}{subsection.7.14}%
+\contentsline {subsection}{\numberline {7.15}应急恢复预案}{54}{subsection.7.15}%
+\contentsline {subsubsection}{\numberline {7.15.1}核心设备故障}{55}{subsubsection.7.15.1}%
+\contentsline {subsubsection}{\numberline {7.15.2}出口访问故障}{55}{subsubsection.7.15.2}%
+\contentsline {subsubsection}{\numberline {7.15.3}VPN 故障}{55}{subsubsection.7.15.3}%
+\contentsline {subsection}{\numberline {7.16}交付内容清单}{55}{subsection.7.16}%
+\contentsline {subsection}{\numberline {7.17}Packet Tracer 仿真的局限性}{56}{subsection.7.17}%
+\contentsline {section}{\numberline {8}总结与展望}{57}{section.8}%
+\contentsline {subsection}{\numberline {8.1}项目总结}{57}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}方案特色}{57}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}未来展望}{58}{subsection.8.3}%
